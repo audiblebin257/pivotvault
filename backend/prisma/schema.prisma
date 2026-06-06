@@ -65,7 +65,7 @@ model Startup {
   metricsSnapshots MetricsSnapshot[]
   aiAnalyses       AiAnalysis[]
   graphEdgesSource GraphEdge[]       @relation("source_startup")
-  graphEdgesTarget GraphEdge[]?      @relation("target_startup")
+  graphEdgesTarget GraphEdge[]      @relation("target_startup")
 
   @@map("startups")
 }
