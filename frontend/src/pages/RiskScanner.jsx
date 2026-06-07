@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, AlertTriangle, CheckCircle2, Share2, ArrowRight, Loader2 } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://pivotvault-production.up.railway.app';
 
 const RiskScanner = () => {
   const [step, setStep] = React.useState('form'); // form | scanning | result
