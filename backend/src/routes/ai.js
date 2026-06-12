@@ -74,6 +74,9 @@ async function callGroq(prompt) {
 }
 
 async function callAI(prompt) {
+  console.log("Gemini key:", !!process.env.GEMINI_API_KEY);
+  console.log("Groq key:", !!process.env.GROQ_API_KEY);
+
   try {
     if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && process.env.GEMINI_API_KEY !== 'your-gemini-api-key-here') {
       return await callGemini(prompt);
