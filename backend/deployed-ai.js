@@ -260,7 +260,7 @@ HISTORICAL CONTEXT FROM DATABASE:
 ${historicalContext || 'No startups found in database.'}
 
 USER QUERY: ${query}`;
-// force redeploy
+
     // FIX 5: Simplified AI call
     let result;
     result = await callGemini(prompt);
