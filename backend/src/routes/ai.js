@@ -56,7 +56,7 @@ async function callGroq(prompt) {
   const Groq = require('groq-sdk');
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   const response = await groq.chat.completions.create({
-    model: 'llama-3.1-70b-versatile',
+    model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'user', content: prompt }],
     response_format: { type: 'json_object' },
   });
@@ -234,8 +234,8 @@ Name: ${s.name}
 Slug: ${s.slug}
 Industry: ${s.industry}
 Status: ${s.status}
-Founded: ${s.foundedYear}
-Closed: ${s.closedYear}
+Founded: ${s.foundingYear}
+Closed: ${s.shutdownYear ?? 'N/A'}
 Summary: ${s.summary}
 
 Reasons:
