@@ -45,7 +45,10 @@ async function callGemini(prompt) {
     generationConfig: { responseMimeType: 'application/json' },
   });
   const result = await model.generateContent(prompt);
-  const text = result.response.text();
+  let text = result.response.text().trim();
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+  }
   return JSON.parse(text);
 }
 
@@ -62,7 +65,7 @@ async function callGroq(prompt) {
 
 async function callAI(prompt) {
   try {
-    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your-gemini-api-key-here') {
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && process.env.GEMINI_API_KEY !== 'your-gemini-api-key-here') {
       return await callGemini(prompt);
     }
   } catch (err) {
@@ -359,7 +362,7 @@ router.post('/research', async (req, res, next) => {
     // Call AI
     let result;
     try {
-      if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your-gemini-api-key-here' && process.env.GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY') {
+      if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && process.env.GEMINI_API_KEY !== 'your-gemini-api-key-here') {
         result = await callGemini(prompt);
       } else {
         result = generateMockResearch(query);
