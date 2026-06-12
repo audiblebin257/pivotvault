@@ -276,7 +276,7 @@ USER QUERY: ${query}`;
 // force redeploy
     // FIX 5: Simplified AI call
     let result;
-    result = await callGemini(prompt);
+    result = await callAI(prompt);
 
     res.json(result);
   } catch (err) {
