@@ -167,6 +167,22 @@ Industry: ${input.industry}`;
     setTimeout(() => scanCache.delete(cacheKey), 60 * 60 * 1000);
 
     res.json(result);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid input', code: 'VALIDATION_ERROR', details: err.errors });
+    }
+    console.error('Risk scan error:', err);
+    // Return mock fallback on error
+    const mockResult = {
+      ...generateMockAnalysis(req.body),
+      comparedAgainst: 0,
+      cached: false,
+      error: 'AI analysis unavailable, showing estimated scores',
+    };
+    res.json(mockResult);
+  }
+});
+
 // Research assistant schema
 const researchSchema = z.object({
   query: z.string().min(3).max(500),
