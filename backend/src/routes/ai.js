@@ -57,10 +57,9 @@ async function callGroq(prompt) {
   const Groq = require('groq-sdk');
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   const response = await groq.chat.completions.create({
-    model: 'llama-3.1-70b-versatile',
-    messages: [{ role: 'user', content: prompt }],
-    response_format: { type: 'json_object' },
-  });
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: prompt }],
+});
   return JSON.parse(response.choices[0].message.content);
 }
 
@@ -71,6 +70,7 @@ async function callAI(prompt, type = 'risk') {
 
   console.log("Gemini key:", hasGemini);
   console.log("Groq key:", hasGroq);
+  console.log("Groq succeeded");
 
   // ── Try Groq first (faster, no quota issues on free tier) ──────────────
   if (hasGroq) {
