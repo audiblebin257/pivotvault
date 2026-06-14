@@ -19,6 +19,7 @@ import CompareStartups from './pages/CompareStartups';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
+import PitchDeckAutopsy from './pages/PitchDeckAutopsy.jsx';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
