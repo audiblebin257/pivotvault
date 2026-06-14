@@ -16,10 +16,11 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Explore', path: '/explore', icon: Search },
+    { name: 'Autopsy', path: '/autopsy', icon: ClipboardCheck },
     { name: 'Compare', path: '/compare', icon: GitCompare },
     { name: 'AI Assistant', path: '/assistant', icon: Sparkles },
     { name: 'Risk Scanner', path: '/scan', icon: Zap },
-    { name: 'Playbook', path: '/playbook', icon: ClipboardCheck },
+    { name: 'Playbook', path: '/playbook', icon: Search },
     { name: 'Quiz', path: '/quiz', icon: Brain },
     { name: 'Insights', path: '/insights', icon: BarChart2 },
     { name: 'Graph', path: '/graph', icon: Share2 },

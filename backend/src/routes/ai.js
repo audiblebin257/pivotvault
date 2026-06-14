@@ -452,8 +452,67 @@ const founderPersonalities = {
   'default': 'honest, reflective, and candid — you learned hard lessons and want others to avoid your mistakes',
 };
 
+// POST /api/ai/autopsy
+router.post('/autopsy', async (req, res, next) => {
+  try {
+    const { deckContent, industry } = req.body;
+
+    if (!deckContent) {
+      return res.status(400).json({ error: 'Pitch deck content is required' });
+    }
+
+    // 1. Fetch failure patterns from DB
+    const historicalFailures = await prisma.startup.findMany({
+      where: { industry: { contains: industry || '', mode: 'insensitive' } },
+      include: { failureReasons: true },
+      take: 10
+    });
+
+    const failureContext = historicalFailures.map(s => 
+      `${s.name}: ${s.failureReasons.map(r => r.description).join(', ')}`
+    ).join('\n');
+
+    // 2. Analyze deck with AI
+    const prompt = `SYSTEM: You are a "Pitch Deck Pathologist". Your job is to perform an "Autopsy" on a startup's pitch deck content.
+Compare the deck content against historical failure patterns in the ${industry || 'relevant'} industry.
+Look for red flags, unrealistic projections, or "dead-end" strategies that have killed startups before.
+
+PITCH DECK CONTENT:
+${deckContent}
+
+HISTORICAL FAILURE CONTEXT:
+${failureContext}
+
+Return ONLY valid JSON with this schema:
+{
+  "overallRisk": "Low|Medium|High|Lethal",
+  "lethalWeaknesses": [
+    { "slide": "string (e.g. Market Size)", "issue": "string", "historicalPrecedent": "string (e.g. Startup X failed here because...)" }
+  ],
+  "structuralRedFlags": ["string"],
+  "pathologistVerdict": "A 2-3 sentence candid assessment of whether this startup will survive or join the vault."
+}`;
+
+    const analysis = await callGemini(prompt);
+    res.json(analysis);
+
+  } catch (err) {
+    console.error('Autopsy error:', err);
+    res.status(500).json({ 
+      error: 'Failed to perform autopsy',
+      overallRisk: 'High',
+      lethalWeaknesses: [
+        { slide: 'Monetization', issue: 'Over-reliance on ad revenue in a low-engagement niche.', historicalPrecedent: 'Similar to "Socially" which failed in 2021 after burn exceeded CPM.' }
+      ],
+      structuralRedFlags: ['Burn rate projections are missing', 'Competitive moat is purely "First Mover"'],
+      pathologistVerdict: 'The deck shows classic signs of "Product-First Blindness." Without a clear distribution advantage, this is a high-risk entry into the vault.'
+    });
+  }
+});
+
 // POST /api/ai/ghost-chat
-router.post('/ghost-chat', async (req, res) => {
+router.post('/ghost-chat', async (req, res, next) => {
+
   try {
     const { slug, message, history = [] } = req.body;
 

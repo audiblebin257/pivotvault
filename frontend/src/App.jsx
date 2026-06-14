@@ -16,6 +16,7 @@ import HistoryPage from './pages/HistoryPage';
 import FailureQuiz from './pages/FailureQuiz';
 import FounderPlaybook from './pages/FounderPlaybook';
 import CompareStartups from './pages/CompareStartups';
+import PitchDeckAutopsy from './pages/PitchDeckAutopsy';
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="/playbook" element={<ProtectedRoute><FounderPlaybook /></ProtectedRoute>} />
             <Route path="/quiz" element={<FailureQuiz />} />
             <Route path="/compare" element={<CompareStartups />} />
+            <Route path="/autopsy" element={<ProtectedRoute><PitchDeckAutopsy /></ProtectedRoute>} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
           </Routes>
