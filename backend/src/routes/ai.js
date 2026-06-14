@@ -401,6 +401,16 @@ router.post('/playbook', async (req, res) => {
   try {
     const { idea, industry, stage } = req.body;
 
+    // Search web
+    const webResults = await searchWeb(
+      `${idea} startup risks competitors failure patterns ${industry}`
+    );
+
+    const webContext = webResults
+      .slice(0, 5)
+      .map(r => `${r.title}: ${r.content}`)
+      .join('\n\n');
+
     const prompt = `
 You are a startup advisor.
 
@@ -408,38 +418,25 @@ Startup Idea: ${idea}
 Industry: ${industry}
 Stage: ${stage}
 
-Return ONLY JSON:
+WEB RESEARCH:
+${webContext}
 
+Return JSON:
 {
-  "summary": "string",
-  "checklist": ["item1","item2","item3"],
-  "risks": ["risk1","risk2"],
-  "nextSteps": ["step1","step2"]
+  "summary": "...",
+  "checklist": ["..."],
+  "pitfalls": ["..."],
+  "nextSteps": ["..."]
 }
 `;
 
     const result = await callAI(prompt, 'research');
+
     res.json(result);
 
   } catch (err) {
-    console.error('Playbook error:', err);
-    res.json({
-      summary: `Founder playbook for ${idea}`,
-      checklist: [
-        'Validate demand',
-        'Interview customers',
-        'Build MVP',
-        'Measure retention'
-      ],
-      risks: [
-        'Weak PMF',
-        'High acquisition cost'
-      ],
-      nextSteps: [
-        'Launch landing page',
-        'Get first 20 users'
-      ]
-    });
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
