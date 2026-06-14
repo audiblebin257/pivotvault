@@ -417,7 +417,7 @@ router.post('/compare-competitors', async (req, res, next) => {
       console.warn('Tavily search failed for competitors:', err.message);
     }
 
-    // 2. Analyze with Gemini
+    // 2. Build prompt
     const prompt = `SYSTEM: You are a market intelligence analyst. 
 Compare the user's startup idea against the live competitors found on the web.
 Identify why these competitors are currently winning (their moats) and where the user's idea might fall into a "failure trap" if they don't differentiate.
@@ -426,7 +426,7 @@ USER IDEA: ${idea}
 INDUSTRY: ${industry}
 
 LIVE WEB CONTEXT:
-${webContext || 'No specific live web data found. Use your general knowledge of the ${industry} market.'}
+${webContext || `No specific live web data found. Use your general knowledge of the ${industry} market.`}
 
 Return ONLY valid JSON with this schema:
 {
@@ -435,7 +435,8 @@ Return ONLY valid JSON with this schema:
   "survivalStrategy": "A specific strategic recommendation to survive against these incumbents."
 }`;
 
-    const analysis = await callGemini(prompt);
+    // 3. Use callAI (Groq first → Gemini fallback → mock)
+    const analysis = await callAI(prompt, 'research');
     res.json(analysis);
 
   } catch (err) {
@@ -449,68 +450,6 @@ Return ONLY valid JSON with this schema:
       gapAnalysis: 'The market is crowded. Your primary challenge is overcoming the network effects of established players.',
       survivalStrategy: 'Focus on a hyper-specific unserved segment before attempting to scale.'
     });
-  }
-});
-
-// POST /api/ai/ghost-chat
-router.post('/ghost-chat', async (req, res, next) => {
-  try {
-    const { slug, message, history = [] } = req.body;
-
-    if (!slug || !message) {
-      return res.status(400).json({ error: 'Slug and message are required' });
-    }
-
-    const startup = await prisma.startup.findUnique({
-      where: { slug },
-      include: {
-        failureReasons: true,
-      }
-    });
-
-    if (!startup) {
-      return res.status(404).json({ error: 'Startup not found' });
-    }
-
-    const reasonsStr = startup.failureReasons.map(r => `${r.category}: ${r.description}`).join('\n');
-
-    const prompt = `SYSTEM: You are the founder of the failed startup "${startup.name}". 
-Your startup was in the ${startup.industry} industry and lasted ${startup.lifetimeMonths} months.
-It failed because of the following reasons:
-${reasonsStr}
-
-Founder Story Context:
-${startup.founderStory || 'No specific story provided.'}
-
-Your Goal:
-Answer the user's question as if you are that founder reflecting on your failure with 20/20 hindsight. 
-Be radically honest, candid, and slightly weary but insightful. 
-Don't be overly optimistic; you are here to teach others from your mistakes.
-Keep responses concise (max 3-4 sentences) and maintain a "post-mortem" tone.
-
-Chat History:
-${history.map(h => `${h.role === 'user' ? 'User' : 'Founder'}: ${h.content}`).join('\n')}
-
-User Question: ${message}
-
-Founder Response:`;
-
-    const response = await callAI(prompt, 'research'); // Using research type for prose-like response if it falls back
-
-    // callAI might return JSON if it goes through Groq/Gemini with the research schema
-    // But for ghost chat, we want raw text. Let's adjust callAI or just use callGemini directly here.
-
-    const genAIResponse = await callGeminiText(`SYSTEM: You are an expert AI persona. 
-Based on the prompt below, provide a response in the first-person as the founder.
-Return ONLY the text of the response. No JSON. No markdown wrappers.
-
-PROMPT:
-${prompt}`);
-
-    res.json({ content: genAIResponse });
-  } catch (err) {
-    console.error('Ghost chat error:', err);
-    res.status(500).json({ error: 'Failed to communicate with the ghost of the founder' });
   }
 });
 
