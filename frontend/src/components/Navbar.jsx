@@ -1,12 +1,49 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Skull, Search, Zap, BarChart2, MessageSquare, Share2, Menu, X, Sparkles,
-  Bookmark, Brain, GitCompare, ClipboardCheck, Sun, Moon, LogOut, User
+  Bookmark, Brain, GitCompare, ClipboardCheck, Sun, Moon, LogOut, User,
+  FileText, LayoutGrid, ChevronRight
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+
+const NavLink = ({ item, isActive, mobile, onClick }) => {
+  const Icon = item.icon;
+  
+  return (
+    <Link
+      to={item.path}
+      onClick={onClick}
+      className={clsx(
+        "relative flex items-center gap-2.5 transition-all duration-200 group",
+        mobile ? "w-full p-4 text-lg font-semibold" : "px-3 py-2 text-sm font-medium",
+        isActive 
+          ? "text-accent bg-accent/5 rounded-md" 
+          : "text-text-secondary hover:text-text-primary"
+      )}
+    >
+      <Icon className={clsx("shrink-0", mobile ? "w-6 h-6" : "w-[18px] h-[18px]")} />
+      <span>{item.name}</span>
+      
+      {!mobile && isActive && (
+        <motion.div
+          layoutId="nav-active-border"
+          className="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-accent shadow-[0_0_8px_rgba(175,155,115,0.6)]"
+          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+        />
+      )}
+      
+      {!mobile && !isActive && (
+        <div className="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center" />
+      )}
+
+      {mobile && <ChevronRight className="ml-auto w-5 h-5 opacity-30" />}
+    </Link>
+  );
+};
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -14,78 +51,128 @@ const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const { isAuthed, user, logout } = useAuth();
 
-  const navLinks = [
+  const primaryNav = [
     { name: 'Explore', path: '/explore', icon: Search },
-    { name: 'Autopsy', path: '/autopsy', icon: ClipboardCheck },
-    { name: 'Compare', path: '/compare', icon: GitCompare },
     { name: 'AI Assistant', path: '/assistant', icon: Sparkles },
     { name: 'Risk Scanner', path: '/scan', icon: Zap },
-    { name: 'Playbook', path: '/playbook', icon: Search },
-    { name: 'Quiz', path: '/quiz', icon: Brain },
+    { name: 'Playbook', path: '/playbook', icon: ClipboardCheck },
+  ];
+
+  const secondaryNav = [
+    { name: 'Autopsy', path: '/autopsy', icon: FileText },
+    { name: 'Compare', path: '/compare', icon: GitCompare },
     { name: 'Insights', path: '/insights', icon: BarChart2 },
     { name: 'Graph', path: '/graph', icon: Share2 },
+    { name: 'Quiz', path: '/quiz', icon: Brain },
     { name: 'Confessions', path: '/confessions', icon: MessageSquare },
   ];
 
-  return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-bg/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-start h-16 gap-12">
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <Skull className="w-8 h-8 text-accent animate-pulse" />
-            <span className="font-display font-bold text-xl tracking-tight">PIVOTVAULT</span>
-          </Link>
+  const allNavItems = [...primaryNav, ...secondaryNav];
 
-          {/* Desktop Nav */}
-          <div className="hidden lg:flex items-center gap-5 flex-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={clsx(
-                  'flex items-center gap-2 text-sm font-medium transition-colors hover:text-accent whitespace-nowrap',
-                  location.pathname === link.path ? 'text-accent' : 'text-text-secondary'
-                )}
-              >
-                <link.icon className="w-4 h-4" />
-                {link.name}
-              </Link>
-            ))}
+  return (
+    <nav className="sticky top-0 z-[60] border-b border-border/40 bg-bg/70 backdrop-blur-xl">
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="flex items-center justify-between h-20">
+          
+          {/* Logo Section */}
+          <div className="flex items-center gap-12">
+            <Link to="/" className="flex items-center gap-3 group shrink-0 pr-4">
+              <div className="relative">
+                <Skull className="w-9 h-9 text-accent transition-transform duration-300 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full scale-0 group-hover:scale-150 transition-transform duration-500" />
+              </div>
+              <span className="font-display font-black text-2xl tracking-tight text-text-primary">
+                PIVOTVAULT
+              </span>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden xl:flex items-center gap-2 border-l border-border/50 pl-10 h-10">
+              {primaryNav.map((item) => (
+                <NavLink 
+                  key={item.path} 
+                  item={item} 
+                  isActive={location.pathname === item.path} 
+                />
+              ))}
+              
+              <div className="w-px h-5 bg-border/40 mx-3" />
+              
+              <div className="flex items-center gap-1">
+                {secondaryNav.slice(0, 3).map((item) => (
+                  <NavLink 
+                    key={item.path} 
+                    item={item} 
+                    isActive={location.pathname === item.path} 
+                  />
+                ))}
+                
+                {/* Desktop Dropdown/More (Optional, but keeping all visible for MVP breadth) */}
+                {secondaryNav.slice(3).map((item) => (
+                  <NavLink 
+                    key={item.path} 
+                    item={item} 
+                    isActive={location.pathname === item.path} 
+                  />
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="hidden lg:flex items-center gap-2 shrink-0 ml-auto">
-            <button
-              onClick={toggleTheme}
-              title={`Switch to ${theme === 'blue' ? 'beige' : 'blue'} theme`}
-              className="p-2 rounded-lg border border-border bg-surface-2 text-text-secondary hover:text-accent"
-            >
-              {theme === 'blue' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+          {/* Utility Actions */}
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 bg-surface-2/50 p-1 rounded-full border border-border/50">
+              <button
+                onClick={toggleTheme}
+                className="p-2.5 rounded-full text-text-secondary hover:text-accent hover:bg-surface-2 transition-all"
+                title="Toggle Mode"
+              >
+                {theme === 'blue' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+              </button>
+
+              {isAuthed && (
+                <Link 
+                  to="/bookmarks" 
+                  className="p-2.5 rounded-full text-text-secondary hover:text-accent hover:bg-surface-2 transition-all"
+                  title="Bookmarks"
+                >
+                  <Bookmark className="w-[18px] h-[18px]" />
+                </Link>
+              )}
+            </div>
+
             {isAuthed ? (
-              <>
-                <Link to="/bookmarks" className="p-2 rounded-lg border border-border bg-surface-2 text-text-secondary hover:text-accent" title="Saved failures">
-                  <Bookmark className="w-4 h-4" />
+              <div className="flex items-center gap-3 ml-2">
+                <Link 
+                  to="/history" 
+                  className="hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-full border border-border/50 bg-surface-2/50 text-sm font-semibold text-text-primary hover:border-accent/50 transition-all"
+                >
+                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
+                    <User className="w-3.5 h-3.5 text-accent" />
+                  </div>
+                  {user?.name?.split(' ')[0] || 'Founder'}
                 </Link>
-                <Link to="/history" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface-2 text-sm text-text-secondary hover:text-accent">
-                  <User className="w-4 h-4" />
-                  {user?.name?.split(' ')[0] || 'Account'}
-                </Link>
-                <button onClick={logout} className="p-2 rounded-lg border border-border bg-surface-2 text-text-secondary hover:text-danger" title="Sign out">
-                  <LogOut className="w-4 h-4" />
+                <button 
+                  onClick={logout} 
+                  className="p-2.5 rounded-full border border-border/50 bg-surface-2/50 text-text-secondary hover:text-red transition-all"
+                  title="Sign out"
+                >
+                  <LogOut className="w-[18px] h-[18px]" />
                 </button>
-              </>
+              </div>
             ) : (
-              <Link to="/login" className="bg-accent text-white px-4 py-2 rounded-lg text-sm font-bold">
-                Sign in
+              <Link 
+                to="/login" 
+                className="bg-accent hover:bg-orange-600 text-white px-7 py-2.5 rounded-full text-sm font-black tracking-wide transition-all shadow-lg shadow-accent/20"
+              >
+                Sign In
               </Link>
             )}
-          </div>
 
-          {/* Mobile menu button */}
-          <div className="lg:hidden ml-auto">
+            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-text-secondary hover:text-text-primary p-2"
+              className="xl:hidden ml-2 p-2.5 rounded-full bg-surface-2 border border-border/50 text-text-primary hover:text-accent transition-all"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -93,50 +180,70 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Nav */}
-      {isOpen && (
-        <div className="lg:hidden border-b border-border bg-surface px-4 pt-2 pb-6 space-y-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              onClick={() => setIsOpen(false)}
-              className={clsx(
-                'flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium',
-                location.pathname === link.path ? 'bg-surface-2 text-accent' : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'
-              )}
-            >
-              <link.icon className="w-5 h-5" />
-              {link.name}
-            </Link>
-          ))}
-          <div className="pt-3 mt-3 border-t border-border space-y-2">
-            {isAuthed && (
-              <>
-                <Link to="/bookmarks" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium text-text-secondary hover:bg-surface-2 hover:text-text-primary">
-                  <Bookmark className="w-5 h-5" /> Saved Failures
-                </Link>
-                <Link to="/history" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium text-text-secondary hover:bg-surface-2 hover:text-text-primary">
-                  <User className="w-5 h-5" /> Search History
-                </Link>
-              </>
-            )}
-            <button onClick={toggleTheme} className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium text-text-secondary hover:bg-surface-2 hover:text-text-primary">
-              {theme === 'blue' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              Switch to {theme === 'blue' ? 'beige' : 'blue'}
-            </button>
-            {isAuthed ? (
-              <button onClick={() => { logout(); setIsOpen(false); }} className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium text-danger hover:bg-surface-2">
-                <LogOut className="w-5 h-5" /> Sign out
-              </button>
-            ) : (
-              <Link to="/login" onClick={() => setIsOpen(false)} className="block bg-accent text-white px-3 py-3 rounded-md text-base font-bold text-center">
-                Sign in
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Mobile Navigation Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 top-[81px] z-[70] bg-bg flex flex-col xl:hidden"
+          >
+            <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8">
+              <section>
+                <div className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-4 pl-4">Primary Modules</div>
+                <div className="grid gap-2">
+                  {primaryNav.map((item) => (
+                    <NavLink 
+                      key={item.path} 
+                      item={item} 
+                      mobile 
+                      isActive={location.pathname === item.path}
+                      onClick={() => setIsOpen(false)}
+                    />
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <div className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-4 pl-4">Intelligence Tools</div>
+                <div className="grid gap-2">
+                  {secondaryNav.map((item) => (
+                    <NavLink 
+                      key={item.path} 
+                      item={item} 
+                      mobile 
+                      isActive={location.pathname === item.path}
+                      onClick={() => setIsOpen(false)}
+                    />
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <div className="p-8 border-t border-border/40 bg-surface-2/30 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <button onClick={toggleTheme} className="p-4 rounded-xl bg-bg border border-border/50">
+                    {theme === 'blue' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+                  </button>
+                  {isAuthed && (
+                    <Link to="/bookmarks" onClick={() => setIsOpen(false)} className="p-4 rounded-xl bg-bg border border-border/50">
+                      <Bookmark className="w-6 h-6" />
+                    </Link>
+                  )}
+                </div>
+                {!isAuthed && (
+                  <Link to="/login" onClick={() => setIsOpen(false)} className="bg-accent text-white px-8 py-4 rounded-xl font-bold">
+                    Get Started
+                  </Link>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };
