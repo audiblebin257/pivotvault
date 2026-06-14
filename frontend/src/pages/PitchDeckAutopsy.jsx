@@ -1,14 +1,50 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Search, ShieldAlert, Target, Activity, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
+import { FileText, Search, ShieldAlert, Target, Activity, Loader2, Sparkles, AlertTriangle, Upload, FileUp } from 'lucide-react';
 import api from '../lib/api';
 import clsx from 'clsx';
+import JSZip from 'jszip';
 
 const PitchDeckAutopsy = () => {
   const [deckContent, setDeckContent] = React.useState('');
   const [industry, setIndustry] = React.useState('SaaS');
   const [loading, setLoading] = React.useState(false);
+  const [parsing, setParsing] = React.useState(false);
   const [result, setResult] = React.useState(null);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.name.endsWith('.pptx')) {
+      setParsing(true);
+      try {
+        const zip = await JSZip.loadAsync(file);
+        const slideFiles = Object.keys(zip.files).filter(name => name.startsWith('ppt/slides/slide') && name.endsWith('.xml'));
+        
+        let fullText = '';
+        for (const slideFile of slideFiles) {
+          const content = await zip.files[slideFile].async('string');
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(content, 'text/xml');
+          const textNodes = xmlDoc.getElementsByTagName('a:t');
+          
+          for (let i = 0; i < textNodes.length; i++) {
+            fullText += textNodes[i].textContent + ' ';
+          }
+          fullText += '\n\n';
+        }
+        setDeckContent(fullText.trim());
+      } catch (err) {
+        console.error('Error parsing PPTX:', err);
+        alert('Failed to parse PPTX file. Please try pasting the text manually.');
+      } finally {
+        setParsing(false);
+      }
+    } else {
+      alert('Please upload a .pptx file.');
+    }
+  };
 
   const handleAutopsy = async (e) => {
     e.preventDefault();
@@ -57,6 +93,39 @@ const PitchDeckAutopsy = () => {
                   <option value="Healthcare">Healthcare</option>
                   <option value="Web3">Web3/Crypto</option>
                 </select>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <label className="text-sm font-bold text-text-secondary uppercase tracking-widest block">Upload Pitch Deck (.pptx)</label>
+              <div className="relative group">
+                <input
+                  type="file"
+                  accept=".pptx"
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <div className={clsx(
+                  "border-2 border-dashed rounded-xl p-8 text-center transition-all",
+                  parsing ? "border-accent bg-accent/5 animate-pulse" : "border-border group-hover:border-accent/50 group-hover:bg-surface-2"
+                )}>
+                  {parsing ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="w-10 h-10 text-accent animate-spin" />
+                      <div className="text-accent font-bold uppercase tracking-widest text-xs">Extracting Text from Slides...</div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center group-hover:bg-accent/10 transition-colors">
+                        <FileUp className="w-6 h-6 text-text-secondary group-hover:text-accent" />
+                      </div>
+                      <div className="text-sm text-text-secondary">
+                        <span className="text-accent font-bold">Click to upload</span> or drag and drop
+                      </div>
+                      <div className="text-[10px] text-text-muted uppercase tracking-wider font-bold">PowerPoint (.pptx) only</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -30,20 +30,20 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-bg/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2">
+        <div className="flex items-center justify-start h-16 gap-12">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <Skull className="w-8 h-8 text-accent animate-pulse" />
             <span className="font-display font-bold text-xl tracking-tight">PIVOTVAULT</span>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden lg:flex items-center gap-5">
+          <div className="hidden lg:flex items-center gap-5 flex-1">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
                 className={clsx(
-                  'flex items-center gap-2 text-sm font-medium transition-colors hover:text-accent',
+                  'flex items-center gap-2 text-sm font-medium transition-colors hover:text-accent whitespace-nowrap',
                   location.pathname === link.path ? 'text-accent' : 'text-text-secondary'
                 )}
               >
@@ -53,7 +53,7 @@ const Navbar = () => {
             ))}
           </div>
 
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2 shrink-0 ml-auto">
             <button
               onClick={toggleTheme}
               title={`Switch to ${theme === 'blue' ? 'beige' : 'blue'} theme`}
@@ -82,7 +82,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="lg:hidden">
+          <div className="lg:hidden ml-auto">
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-text-secondary hover:text-text-primary p-2"
