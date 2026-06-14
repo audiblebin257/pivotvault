@@ -421,13 +421,26 @@ Stage: ${stage}
 WEB RESEARCH:
 ${webContext}
 
-Return JSON:
-{
-  "summary": "...",
-  "checklist": ["..."],
-  "pitfalls": ["..."],
-  "nextSteps": ["..."]
-}
+return res.json({
+  comparedAgainst: 15,
+  title: "College Social Media Startup Playbook",
+  overview: "Analysis based on competitors and failed startups...",
+  checklist: [
+    {
+      phase: "Validation",
+      items: [
+        "Interview 50 students",
+        "Validate retention"
+      ]
+    }
+  ],
+  pitfalls: [
+    {
+      mistake: "Ignoring moderation",
+      avoidance: "Build moderation systems from day one"
+    }
+  ]
+});
 `;
 
     const result = await callAI(prompt, 'research');

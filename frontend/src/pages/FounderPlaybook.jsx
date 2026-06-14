@@ -14,7 +14,10 @@ const FounderPlaybook = () => {
     setError(null);
     try {
       const { data } = await api.post('/ai/playbook', form);
-      setResult(data);
+
+    console.log("PLAYBOOK RESPONSE:", data);
+
+    setResult(data);
     } catch (err) {
       setError(err?.response?.data?.error || 'Could not generate playbook.');
     } finally {
