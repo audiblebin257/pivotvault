@@ -15,10 +15,13 @@ const insightsRoutes = require('./routes/insights');
 const authRoutes = require('./routes/auth');
 const bookmarkRoutes = require('./routes/bookmarks');
 const quizRoutes = require('./routes/quiz');
+const rssRoutes = require('./routes/rss');
+const feedbackRoutes = require('./routes/feedback');
 
 const prisma = new PrismaClient();
 const app = express();
 app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet());
 app.use(cors({
@@ -56,6 +59,8 @@ app.use('/api/confessions', confessionRoutes);
 app.use('/api/insights', insightsRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/rss', rssRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // 404 handler
 app.use((req, res) => {
