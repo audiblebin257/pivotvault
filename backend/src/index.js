@@ -27,7 +27,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://superb-kitsune-3c7bb1.netlify.app"
+    "https://pivotvault.netlify.app"
   ],
   credentials: true
 }));
