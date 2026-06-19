@@ -105,7 +105,7 @@ async function callGroq(prompt) {
 }
 
 // type = 'risk' | 'research' — determines which mock schema to fall back to
-async function callAI(prompt, type = 'risk') {
+async function callAI(prompt, type = 'risk', userInput = '') {
   const hasGemini = process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && process.env.GEMINI_API_KEY !== 'your-gemini-api-key-here';
   const hasGroq = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== '' && process.env.GROQ_API_KEY !== 'your-groq-api-key-here';
 
@@ -140,9 +140,9 @@ async function callAI(prompt, type = 'risk') {
   // ── Both failed — return mock ───────────────────────────────────────────
   console.error('All AI providers failed. Returning mock response.');
   if (type === 'research') {
-    return generateMockResearch(prompt);
+    return generateMockResearch(userInput);
   }
-  return generateMockAnalysis(prompt);
+  return generateMockAnalysis(userInput);
 }
 
 // Fallback for /risk-scan
@@ -266,7 +266,7 @@ Revenue Model: ${input.revenueModel}
 Team Size: ${input.teamSize}
 Industry: ${input.industry}`;
 
-    const analysis = await callAI(prompt, 'risk');
+    const analysis = await callAI(prompt, 'risk', input.idea);
 
     const result = {
       ...analysis,
@@ -395,7 +395,7 @@ ${webContext || 'No web results available.'}
 ${chatHistory}USER QUERY: ${query}`;
 
     // ── 4. Call AI ──────────────────────────────────────────────────────────
-    const result = await callAI(prompt, 'research');
+    const result = await callAI(prompt, 'research', query);
 
     res.json({
       ...result,
@@ -473,7 +473,7 @@ ${chatHistory}Return this exact JSON schema:
   "nextSteps": ["step 1", "step 2", "step 3"]
 }`;
 
-    const result = await callAI(prompt, 'research');
+    const result = await callAI(prompt, 'research', idea);
     res.json(result);
 
   } catch (err) {
@@ -560,7 +560,7 @@ ${chatHistory}Return ONLY valid JSON with this schema:
     let analysis;
 
 try {
-  analysis = await callAI(prompt, 'autopsy');
+  analysis = await callAI(prompt, 'autopsy', deckContent);
 } catch (err) {
   console.error('Autopsy AI failed:', err);
 
@@ -754,7 +754,7 @@ Return ONLY valid JSON with this schema:
   "survivalStrategy": "A specific strategic recommendation to survive against these incumbents."
 }`;
 
-    const analysis = await callAI(prompt, 'research');
+    const analysis = await callAI(prompt, 'research', idea);
     res.json(analysis);
 
   } catch (err) {
