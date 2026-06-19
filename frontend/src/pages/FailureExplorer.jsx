@@ -1,7 +1,8 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Filter, X, SlidersHorizontal, ArrowUpDown, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Filter, X, SlidersHorizontal, ArrowUpDown, ChevronDown, AlertTriangle } from 'lucide-react';
 import StartupCard from '../components/StartupCard';
+import SearchInput from '../components/ui/SearchInput';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -185,16 +186,12 @@ const FailureExplorer = () => {
           <h1 className="text-3xl font-display font-bold text-text-primary mb-6">Failure Archive</h1>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-              <input
-                type="text"
-                placeholder="Search startup name, industry, or key lessons..."
-                className="w-full bg-surface border border-border rounded-md py-3 pl-12 pr-4 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-                value={query}
-                onChange={(e) => handleFilterChange('q', e.target.value)}
-              />
-            </div>
+            <SearchInput
+              placeholder="Search startup name, industry, or key lessons..."
+              className="flex-1"
+              value={query}
+              onChange={(e) => handleFilterChange('q', e.target.value)}
+            />
             <button
               onClick={() => setShowMobileFilters(true)}
               className="sm:hidden flex items-center justify-center gap-2 bg-surface border border-border px-4 py-3 rounded-md text-text-primary font-medium hover:bg-surface-2"

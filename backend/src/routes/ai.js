@@ -194,10 +194,11 @@ function generateMockResearch(query) {
 router.post('/risk-scan', riskScanLimiter, async (req, res, next) => {
   try {
     const input = riskScanSchema.parse(req.body);
+    const { history = [] } = req.body;
     const cacheKey = getCacheKey(input);
 
     const cached = scanCache.get(cacheKey);
-    if (cached) {
+    if (cached && history.length === 0) {
       return res.json({ ...cached, cached: true });
     }
 
@@ -219,6 +220,13 @@ router.post('/risk-scan', riskScanLimiter, async (req, res, next) => {
       `${s.name} (${s.industry}, ${s.status}): ${s.summary?.slice(0, 100)}`
     ).join('\n');
 
+    const chatHistory = history.length > 0
+      ? `PREVIOUS CONVERSATION:
+${history.map(h => `${h.role}: ${h.content}`).join('\n')}
+
+`
+      : '';
+
     const prompt = `SYSTEM: You are a startup failure analyst. Analyze this startup idea against historical failures. Return ONLY valid JSON — no prose, no markdown, no explanation.
 
 SCHEMA: {
@@ -233,7 +241,7 @@ SCHEMA: {
 HISTORICAL CONTEXT:
 ${historicalContext || 'No directly similar startups found in database.'}
 
-USER STARTUP:
+${chatHistory}USER STARTUP:
 Idea: ${input.idea}
 Target Audience: ${input.audience}
 Revenue Model: ${input.revenueModel}
@@ -275,6 +283,7 @@ const researchSchema = z.object({
 router.post('/research', async (req, res, next) => {
   try {
     const input = researchSchema.parse(req.body);
+    const { history = [] } = req.body;
     const query = input.query;
 
     // ── 1. Fetch from local DB ──────────────────────────────────────────────
@@ -322,6 +331,13 @@ ${s.failureReasons.map(r => r.description).join(', ')}
       console.warn('Tavily search failed, continuing with DB only:', webErr.message);
     }
 
+    const chatHistory = history.length > 0
+      ? `PREVIOUS CONVERSATION:
+${history.map(h => `${h.role}: ${h.content}`).join('\n')}
+
+`
+      : '';
+
     // ── 3. Build prompt ─────────────────────────────────────────────────────
     const prompt = `SYSTEM: You are an expert startup failure analyst. Analyze the user's research query using the historical startup failure database AND the latest web information provided below. Return ONLY valid JSON matching this schema:
 {
@@ -358,7 +374,7 @@ ${historicalContext || 'No startups found in database.'}
 LATEST WEB INFORMATION:
 ${webContext || 'No web results available.'}
 
-USER QUERY: ${query}`;
+${chatHistory}USER QUERY: ${query}`;
 
     // ── 4. Call AI ──────────────────────────────────────────────────────────
     const result = await callAI(prompt, 'research');
@@ -399,7 +415,7 @@ USER QUERY: ${query}`;
 // POST /api/ai/playbook
 router.post('/playbook', async (req, res) => {
   try {
-    const { idea, industry, stage } = req.body;
+    const { idea, industry, stage, history = [] } = req.body;
 
     if (!idea) return res.status(400).json({ error: 'Idea is required' });
 
@@ -411,6 +427,13 @@ router.post('/playbook', async (req, res) => {
       console.warn('Tavily failed for playbook:', err.message);
     }
 
+    const chatHistory = history.length > 0
+      ? `PREVIOUS CONVERSATION:
+${history.map(h => `${h.role}: ${h.content}`).join('\n')}
+
+`
+      : '';
+
     const prompt = `SYSTEM: You are a startup advisor. Return ONLY valid JSON, no markdown, no explanation.
 
 Startup Idea: ${idea}
@@ -420,7 +443,7 @@ Stage: ${stage || 'idea'}
 WEB RESEARCH:
 ${webContext || 'No web data available.'}
 
-Return this exact JSON schema:
+${chatHistory}Return this exact JSON schema:
 {
   "summary": "2-3 sentence overview of the key challenge for this startup",
   "checklist": ["actionable item 1", "actionable item 2", "actionable item 3", "actionable item 4", "actionable item 5"],
@@ -455,7 +478,7 @@ const founderPersonalities = {
 // POST /api/ai/autopsy
 router.post('/autopsy', async (req, res, next) => {
   try {
-    const { deckContent, industry } = req.body;
+    const { deckContent, industry, history = [] } = req.body;
 
     if (!deckContent) {
       return res.status(400).json({ error: 'Pitch deck content is required' });
@@ -472,6 +495,13 @@ router.post('/autopsy', async (req, res, next) => {
       `${s.name}: ${s.failureReasons.map(r => r.description).join(', ')}`
     ).join('\n');
 
+    const chatHistory = history.length > 0
+      ? `PREVIOUS CONVERSATION:
+${history.map(h => `${h.role}: ${h.content}`).join('\n')}
+
+`
+      : '';
+
     // 2. Analyze deck with AI
     const prompt = `SYSTEM: You are a "Pitch Deck Pathologist". Your job is to perform an "Autopsy" on a startup's pitch deck content.
 Compare the deck content against historical failure patterns in the ${industry || 'relevant'} industry.
@@ -483,14 +513,26 @@ ${deckContent}
 HISTORICAL FAILURE CONTEXT:
 ${failureContext}
 
-Return ONLY valid JSON with this schema:
+${chatHistory}Return ONLY valid JSON with this schema:
 {
   "overallRisk": "Low|Medium|High|Lethal",
   "lethalWeaknesses": [
     { "slide": "string (e.g. Market Size)", "issue": "string", "historicalPrecedent": "string (e.g. Startup X failed here because...)" }
   ],
   "structuralRedFlags": ["string"],
-  "pathologistVerdict": "A 2-3 sentence candid assessment of whether this startup will survive or join the vault."
+  "pathologistVerdict": "A 2-3 sentence candid assessment of whether this startup will survive or join the vault.",
+  "executiveSummary": "A concise 3-4 paragraph executive summary of the entire analysis, highlighting key strengths and critical risks.",
+  "strengths": [{"title": "string", "description": "string"}],
+  "weaknesses": [{"title": "string", "description": "string"}],
+  "marketRisks": [{"title": "string", "description": "string"}],
+  "productRisks": [{"title": "string", "description": "string"}],
+  "gtmRisks": [{"title": "string", "description": "string"}],
+  "financialRisks": [{"title": "string", "description": "string"}],
+  "pmfAnalysis": "A detailed 2-3 paragraph analysis of product-market fit signals and gaps.",
+  "investorConcerns": [{"title": "string", "description": "string"}],
+  "competitiveAnalysis": "A 2-3 paragraph analysis of the competitive landscape and how this startup stacks up.",
+  "recommendedImprovements": [{"title": "string", "description": "string"}],
+  "actionPlan": [{"phase": "string (e.g. Week 1-2)", "tasks": ["string"]}]
 }`;
 
     let analysis;
@@ -512,7 +554,19 @@ try {
     structuralRedFlags: [
       'Could not run full AI analysis'
     ],
-    pathologistVerdict: 'AI providers are temporarily unavailable. Showing fallback analysis.'
+    pathologistVerdict: 'AI providers are temporarily unavailable. Showing fallback analysis.',
+    executiveSummary: 'This is a fallback executive summary while AI services are unavailable.',
+    strengths: [{title: 'Deck Structure', description: 'Deck is well-organized.'}],
+    weaknesses: [{title: 'Validation', description: 'Lack of customer validation evidence.'}],
+    marketRisks: [{title: 'Competition', description: 'Highly competitive market.'}],
+    productRisks: [{title: 'MVP Scope', description: 'Scope may be too large.'}],
+    gtmRisks: [{title: 'Customer Acquisition', description: 'No clear CAC strategy.'}],
+    financialRisks: [{title: 'Projections', description: 'Unrealistic financial projections.'}],
+    pmfAnalysis: 'No clear product-market fit signals found in deck.',
+    investorConcerns: [{title: 'Traction', description: 'Lack of user traction data.'}],
+    competitiveAnalysis: 'Competitive landscape analysis is missing from the deck.',
+    recommendedImprovements: [{title: 'Add Validation', description: 'Add customer interview data.'}],
+    actionPlan: [{phase: 'Week 1-2', tasks: ['Conduct 10 customer interviews']}]
   };
 }
 

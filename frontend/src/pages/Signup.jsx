@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Skull, User, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBookmarks } from '../context/BookmarkContext';
+import { IconInput } from '../components/ui/IconInput';
 
 const Signup = () => {
   const { register } = useAuth();
@@ -55,27 +56,36 @@ const Signup = () => {
           )}
           <div className="space-y-2">
             <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Name</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-              <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ada Lovelace"
-                className="w-full bg-surface-2 border border-border rounded-lg py-3 pl-10 pr-3 focus:outline-none focus:border-accent text-text-primary" />
-            </div>
+            <IconInput
+              icon={User}
+              type="text" 
+              required 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              placeholder="Ada Lovelace"
+            />
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
-                className="w-full bg-surface-2 border border-border rounded-lg py-3 pl-10 pr-3 focus:outline-none focus:border-accent text-text-primary" />
-            </div>
+            <IconInput
+              icon={Mail}
+              type="email" 
+              required 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              placeholder="you@example.com"
+            />
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters"
-                className="w-full bg-surface-2 border border-border rounded-lg py-3 pl-10 pr-3 focus:outline-none focus:border-accent text-text-primary" />
-            </div>
+            <IconInput
+              icon={Lock}
+              type="password" 
+              required 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              placeholder="At least 6 characters"
+            />
           </div>
           <button type="submit" disabled={loading}
             className="w-full bg-accent hover:opacity-90 disabled:opacity-50 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
 import api from '../lib/api';
+import SearchInput from './ui/SearchInput';
 
 export default function StartupSearch() {
   const [query, setQuery] = useState('');
@@ -36,16 +36,11 @@ export default function StartupSearch() {
 
   return (
     <div className="relative w-full max-w-md">
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-        <input
-          type="text"
-          placeholder="Search startups..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full bg-surface border border-border rounded-md py-2.5 pl-12 pr-4 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-        />
-      </div>
+      <SearchInput
+        placeholder="Search startups..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
       {results.length > 0 && (
         <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-border bg-surface shadow-elevated">
           {results.map((s) => (

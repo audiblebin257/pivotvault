@@ -1,9 +1,9 @@
 import { clsx } from 'clsx';
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, AlertTriangle, CheckCircle2, ArrowRight, Loader2, Shuffle, Lightbulb, Sword, ShieldCheck, Target, RefreshCcw, X } from 'lucide-react';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
+import { Zap, AlertTriangle, CheckCircle2, ArrowRight, Loader2, Shuffle, Lightbulb, Sword, ShieldCheck, Target, RefreshCcw, X, HelpCircle, Send } from 'lucide-react';
 import api from '../lib/api';
+import PremiumRadarChart from '../components/PremiumRadarChart';
 
 const RiskScanner = () => {
   const [step, setStep] = React.useState('form'); // form | scanning | result
@@ -14,21 +14,34 @@ const RiskScanner = () => {
     teamSize: '2',
     industry: 'SaaS'
   });
-  const [result, setResult] = React.useState(null);
+  const [conversation, setConversation] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
   const [compLoading, setCompLoading] = React.useState(false);
   const [compResult, setCompResult] = React.useState(null);
   const [loadingText, setLoadingText] = React.useState('');
   const [simulating, setSimulating] = React.useState(null); 
   const [simulatedResult, setSimulatedResult] = React.useState(null);
+  const [followUpQuery, setFollowUpQuery] = React.useState('');
+  const messagesEndRef = React.useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  React.useEffect(() => {
+    scrollToBottom();
+  }, [conversation]);
 
   const handleSimulatePivot = (pivot, index) => {
     setSimulating(index);
     setTimeout(() => {
-      const improvedScore = Math.max(20, result.riskScore - 25);
+      const lastResult = conversation[conversation.length - 1]?.fullResult;
+      if (!lastResult) return;
+      const improvedScore = Math.max(20, lastResult.riskScore - 25);
       const improvedBreakdown = {
-        ...result.riskBreakdown,
-        customerAcquisition: Math.max(15, result.riskBreakdown.customerAcquisition - 30),
-        retention: Math.max(10, result.riskBreakdown.retention - 20)
+        ...lastResult.riskBreakdown,
+        customerAcquisition: Math.max(15, lastResult.riskBreakdown.customerAcquisition - 30),
+        retention: Math.max(10, lastResult.riskBreakdown.retention - 20)
       };
       setSimulatedResult({
         pivot,
@@ -50,6 +63,7 @@ const RiskScanner = () => {
   const handleScan = async (e) => {
     e.preventDefault();
     setStep('scanning');
+    setLoading(true);
     let msgIdx = 0;
     const interval = setInterval(() => {
       setLoadingText(loadingMessages[msgIdx % loadingMessages.length]);
@@ -58,16 +72,61 @@ const RiskScanner = () => {
 
     try {
       const response = await api.post('/ai/risk-scan', formData);
-      setResult(response.data);
+      
+      setConversation([
+        {
+          role: 'user',
+          content: `Startup Idea: ${formData.idea}\nAudience: ${formData.audience}\nRevenue Model: ${formData.revenueModel}\nTeam Size: ${formData.teamSize}\nIndustry: ${formData.industry}`
+        },
+        {
+          role: 'assistant',
+          content: "Here's your risk assessment report.",
+          fullResult: response.data
+        }
+      ]);
+
       setTimeout(() => {
         clearInterval(interval);
         setStep('result');
+        setLoading(false);
       }, 3000);
     } catch (err) {
       console.error(err);
       clearInterval(interval);
       setStep('form');
+      setLoading(false);
     }
+  };
+
+  const handleFollowUp = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!followUpQuery.trim()) return;
+    
+    setLoading(true);
+    const newHistory = conversation.map(msg => ({ role: msg.role, content: msg.content }));
+
+    try {
+      const response = await api.post('/ai/risk-scan', { 
+        ...formData,
+        history: newHistory
+      });
+
+      setConversation(prev => [
+        ...prev,
+        { role: 'user', content: followUpQuery },
+        { role: 'assistant', content: "Here's your updated assessment.", fullResult: response.data }
+      ]);
+      setFollowUpQuery('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSuggestedFollowUp = (query) => {
+    setFollowUpQuery(query);
+    handleFollowUp();
   };
 
   const handleCompare = async () => {
@@ -85,22 +144,40 @@ const RiskScanner = () => {
     }
   };
 
-  const radarData = result ? [
-    { subject: 'CAC', A: result.riskBreakdown.customerAcquisition, fullMark: 100 },
-    { subject: 'Retention', A: result.riskBreakdown.retention, fullMark: 100 },
-    { subject: 'Revenue', A: result.riskBreakdown.monetization, fullMark: 100 },
-    { subject: 'Market', A: result.riskBreakdown.competition, fullMark: 100 },
-    { subject: 'Timing', A: result.riskBreakdown.timing, fullMark: 100 },
+  const resetScan = () => {
+    setStep('form');
+    setConversation([]);
+    setCompResult(null);
+    setSimulatedResult(null);
+    setFollowUpQuery('');
+  };
+
+  const lastResult = conversation.length > 0 ? conversation[conversation.length - 1].fullResult : null;
+
+  const radarData = lastResult ? [
+    { subject: 'CAC', A: lastResult.riskBreakdown.customerAcquisition, fullMark: 100 },
+    { subject: 'Retention', A: lastResult.riskBreakdown.retention, fullMark: 100 },
+    { subject: 'Revenue', A: lastResult.riskBreakdown.monetization, fullMark: 100 },
+    { subject: 'Market', A: lastResult.riskBreakdown.competition, fullMark: 100 },
+    { subject: 'Timing', A: lastResult.riskBreakdown.timing, fullMark: 100 },
   ] : [];
 
-  const currentScore = simulatedResult ? simulatedResult.score : result?.riskScore;
-  const currentBreakdown = simulatedResult ? [
+  const currentScore = simulatedResult ? simulatedResult.score : lastResult?.riskScore;
+  const currentBreakdown = simulatedResult && lastResult ? [
     { subject: 'CAC', A: simulatedResult.breakdown.customerAcquisition, fullMark: 100 },
     { subject: 'Retention', A: simulatedResult.breakdown.retention, fullMark: 100 },
-    { subject: 'Revenue', A: result.riskBreakdown.monetization, fullMark: 100 },
-    { subject: 'Market', A: result.riskBreakdown.competition, fullMark: 100 },
-    { subject: 'Timing', A: result.riskBreakdown.timing, fullMark: 100 },
+    { subject: 'Revenue', A: lastResult.riskBreakdown.monetization, fullMark: 100 },
+    { subject: 'Market', A: lastResult.riskBreakdown.competition, fullMark: 100 },
+    { subject: 'Timing', A: lastResult.riskBreakdown.timing, fullMark: 100 },
   ] : radarData;
+
+  const suggestedFollowUps = [
+    "Explain deeper",
+    "Show examples",
+    "Compare startups",
+    "Give recommendations",
+    "Generate action plan"
+  ];
 
   return (
     <div className="min-h-screen bg-bg">
@@ -207,7 +284,7 @@ const RiskScanner = () => {
             </motion.div>
           )}
 
-          {step === 'result' && result && (
+          {step === 'result' && lastResult && (
             <motion.div
               key="result"
               initial={{ opacity: 0 }}
@@ -223,7 +300,7 @@ const RiskScanner = () => {
                   <h1 className="text-3xl font-display font-bold text-text-primary">Risk Analysis Report</h1>
                 </div>
                 <button
-                  onClick={() => setStep('form')}
+                  onClick={resetScan}
                   className="pv-btn-secondary flex items-center gap-2"
                 >
                   <RefreshCcw className="w-4 h-4" />
@@ -266,7 +343,7 @@ const RiskScanner = () => {
                     </div>
                     <div className={clsx(
                       "flex items-center justify-center gap-2 font-bold text-sm uppercase tracking-wider",
-                      currentScore > 70 ? "text-danger" : currentScore > 40 ? "text-accent" : "text-success"
+                      currentScore > 70 ? 'text-danger' : currentScore > 40 ? 'text-accent' : 'text-success'
                     )}>
                       {currentScore > 70 ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                       {currentScore > 70 ? 'HIGH RISK' : currentScore > 40 ? 'MODERATE RISK' : 'LOW RISK'}
@@ -288,14 +365,8 @@ const RiskScanner = () => {
                     <div className="text-xs font-bold uppercase text-text-muted tracking-widest mb-4">
                       Risk Analysis Matrix
                     </div>
-                    <div className="h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={currentBreakdown}>
-                          <PolarGrid stroke="var(--color-border)" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }} />
-                          <Radar name="Risk" dataKey="A" stroke={simulatedResult ? "var(--color-success)" : "var(--color-accent)"} fill={simulatedResult ? "var(--color-success)" : "var(--color-accent)"} fillOpacity={0.5} />
-                        </RadarChart>
-                      </ResponsiveContainer>
+                    <div className="h-80">
+                      <PremiumRadarChart data={currentBreakdown} isSimulated={!!simulatedResult} />
                     </div>
                   </div>
                 </div>
@@ -308,7 +379,7 @@ const RiskScanner = () => {
                   Recommendations
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {result.recommendations.map((rec, i) => (
+                  {lastResult.recommendations.map((rec, i) => (
                     <div key={i} className="border border-border rounded-lg p-5 bg-surface-2/30">
                       <div className="flex items-start gap-3">
                         <div className={clsx(
@@ -402,7 +473,7 @@ const RiskScanner = () => {
               </div>
 
               {/* Suggested Pivots */}
-              {result.suggestedPivots && (
+              {lastResult.suggestedPivots && (
                 <div className="pv-card p-8 border-accent/20 bg-surface/30">
                   <div className="mb-6">
                     <h3 className="text-xl font-display font-bold text-text-primary flex items-center gap-2">
@@ -412,7 +483,7 @@ const RiskScanner = () => {
                     <p className="text-sm text-text-secondary mt-1">Select a pivot to simulate its impact</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {result.suggestedPivots.map((pivot, i) => (
+                    {lastResult.suggestedPivots.map((pivot, i) => (
                       <motion.button
                         key={i}
                         whileHover={{ y: -2 }}
@@ -444,9 +515,57 @@ const RiskScanner = () => {
                   </div>
                 </div>
               )}
+
+              {/* Follow-up Section */}
+              <div className="pv-card p-8 border-accent/20 bg-surface/30">
+                <h3 className="text-xl font-display font-bold text-text-primary mb-6 flex items-center gap-2">
+                  <HelpCircle className="text-accent w-6 h-6" />
+                  Ask Follow-up Questions
+                </h3>
+
+                {/* Suggested Follow-up Chips */}
+                <div className="mb-6">
+                  <div className="text-xs font-bold uppercase text-text-muted tracking-widest mb-3">Suggested</div>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedFollowUps.map((followUp, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSuggestedFollowUp(followUp)}
+                        className="px-4 py-2 border border-border rounded-lg bg-surface hover:border-accent/40 hover:bg-surface-2 transition-colors text-sm font-medium"
+                      >
+                        {followUp}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Follow-up Input */}
+                <form onSubmit={handleFollowUp} className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Ask a follow-up question..."
+                    className="flex-1 pv-field"
+                    value={followUpQuery}
+                    onChange={e => setFollowUpQuery(e.target.value)}
+                    disabled={loading}
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || !followUpQuery.trim()}
+                    className="pv-btn-primary disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </button>
+                </form>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
+        <div ref={messagesEndRef} />
       </div>
     </div>
   );

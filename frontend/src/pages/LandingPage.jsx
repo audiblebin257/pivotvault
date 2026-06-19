@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Sparkles, AlertTriangle, ArrowRight, TrendingUp, BarChart3, Database, ShieldAlert } from 'lucide-react';
+import { Sparkles, AlertTriangle, ArrowRight, TrendingUp, BarChart3, Database, ShieldAlert } from 'lucide-react';
 import StartupCard from '../components/StartupCard';
 import LiveIntelPulse from '../components/LiveIntelPulse';
+import SearchInput from '../components/ui/SearchInput';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -79,34 +80,30 @@ const LandingPage = () => {
             </p>
 
             {/* Search Bar */}
-            <div className="max-w-2xl mb-8">
-              <form onSubmit={(e) => handleSearch(e, 'explore')} className="flex gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-                  <input
-                    type="text"
-                    placeholder="Search startup name, industry, or failure reason..."
-                    className="w-full bg-surface border border-border rounded-lg py-3 pl-12 pr-4 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="bg-accent hover:bg-accent-2 text-accent-contrast font-semibold px-6 py-3 rounded-lg transition-colors"
-                >
-                  Explore
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => handleSearch(e, 'ai')}
-                  className="border border-border bg-surface-2 hover:bg-surface-3 text-text-primary font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Ask AI
-                </button>
-              </form>
-            </div>
+          <div className="max-w-2xl mb-8">
+            <form onSubmit={(e) => handleSearch(e, 'explore')} className="flex gap-3">
+              <SearchInput
+                placeholder="Search startup name, industry, or failure reason..."
+                className="flex-1"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="bg-accent hover:bg-accent-2 text-accent-contrast font-semibold px-6 py-3 rounded-lg transition-colors"
+              >
+                Explore
+              </button>
+              <button
+                type="button"
+                onClick={(e) => handleSearch(e, 'ai')}
+                className="border border-border bg-surface-2 hover:bg-surface-3 text-text-primary font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Ask AI
+              </button>
+            </form>
+          </div>
 
             {/* Sample Prompts */}
             <div className="flex flex-wrap gap-2">

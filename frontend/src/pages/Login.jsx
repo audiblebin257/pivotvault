@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Skull, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBookmarks } from '../context/BookmarkContext';
+import { IconInput } from '../components/ui/IconInput';
 
 const Login = () => {
   const { login } = useAuth();
@@ -54,25 +55,25 @@ const Login = () => {
           )}
           <div className="space-y-2">
             <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-              <input
-                type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full bg-surface-2 border border-border rounded-lg py-3 pl-10 pr-3 focus:outline-none focus:border-accent text-text-primary"
-              />
-            </div>
+            <IconInput
+              icon={Mail}
+              type="email" 
+              required 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-              <input
-                type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-surface-2 border border-border rounded-lg py-3 pl-10 pr-3 focus:outline-none focus:border-accent text-text-primary"
-              />
-            </div>
+            <IconInput
+              icon={Lock}
+              type="password" 
+              required 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
           </div>
           <button
             type="submit" disabled={loading}

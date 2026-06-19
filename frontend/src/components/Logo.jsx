@@ -29,7 +29,15 @@ const logoMap = {
   "vine": "/logos/vine.png",
   "webvan": "/logos/webvan.jpg",
   "yikyak": "/logos/yik yak.png",
-  "zirtual": "/logos/zirtual.jpg"
+  "zirtual": "/logos/zirtual.jpg",
+  // New logos
+  "aereo": "/logos/aereo.png",
+  "airware": "/logos/airware.jpg",
+  "beepi": "/logos/beepi.jpg",
+  "betterplace": "/logos/betterplace.jpg",
+  "better": "/logos/betterplace.jpg",
+  "colorlab": "/logos/color lab.png",
+  "colorlabs": "/logos/color lab.png"
 };
 
 const Logo = ({

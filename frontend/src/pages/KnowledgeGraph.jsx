@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Info, ZoomIn, ZoomOut, RotateCcw, Building2, MapPin, Skull, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
+import Logo from '../components/Logo';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -303,9 +304,11 @@ const KnowledgeGraph = () => {
               <X className="w-4 h-4" />
             </button>
             
-            <div className="w-16 h-16 bg-accent/10 text-accent rounded-lg flex items-center justify-center text-2xl font-display font-bold mb-6 border border-accent/20">
-              {selectedNode.name.charAt(0).toUpperCase()}
-            </div>
+            <Logo
+              name={selectedNode.name}
+              size="lg"
+              className="mb-6"
+            />
             
             <h2 className="text-xl font-display font-bold text-text-primary mb-1">{selectedNode.name}</h2>
             {selectedNode.status && (

@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Ghost, MessageSquare, Terminal, Search, Filter, Sparkles, AlertCircle } from 'lucide-react';
+import { Ghost, MessageSquare, Terminal, Filter, Sparkles, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import GhostChat from '../components/GhostChat';
 import Logo from '../components/Logo';
+import SearchInput from '../components/ui/SearchInput';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -46,16 +47,12 @@ const HallOfGhosts = () => {
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 mb-12">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-          <input 
-            type="text"
-            placeholder="Search for a specific founder or industry..."
-            className="w-full bg-surface-2 border border-border rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-accent text-text-primary shadow-inner"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          placeholder="Search for a specific founder or industry..."
+          className="flex-1"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
       {loading ? (

@@ -1,12 +1,22 @@
 import React from 'react';
-import { ClipboardCheck, Loader2, Sparkles, ChevronRight, AlertTriangle } from 'lucide-react';
+import { ClipboardCheck, Loader2, Sparkles, ChevronRight, AlertTriangle, HelpCircle, Send, RefreshCcw } from 'lucide-react';
 import api from '../lib/api';
 
 const FounderPlaybook = () => {
   const [form, setForm] = React.useState({ idea: '', industry: 'SaaS', stage: 'idea' });
-  const [result, setResult] = React.useState(null);
+  const [conversation, setConversation] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
+  const [followUpQuery, setFollowUpQuery] = React.useState('');
+  const messagesEndRef = React.useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  React.useEffect(() => {
+    scrollToBottom();
+  }, [conversation]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -14,7 +24,17 @@ const FounderPlaybook = () => {
     setError(null);
     try {
       const { data } = await api.post('/ai/playbook', form);
-      setResult(data);
+      setConversation([
+        {
+          role: 'user',
+          content: `Startup Idea: ${form.idea}\nIndustry: ${form.industry}\nStage: ${form.stage}`
+        },
+        {
+          role: 'assistant',
+          content: "Here's your strategic playbook.",
+          fullResult: data
+        }
+      ]);
     } catch (err) {
       setError(err?.response?.data?.error || 'Could not generate playbook.');
     } finally {
@@ -22,15 +42,71 @@ const FounderPlaybook = () => {
     }
   };
 
+  const handleFollowUp = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!followUpQuery.trim()) return;
+
+    setLoading(true);
+    const newHistory = conversation.map(msg => ({ role: msg.role, content: msg.content }));
+
+    try {
+      const { data } = await api.post('/ai/playbook', { ...form, history: newHistory });
+      setConversation(prev => [
+        ...prev,
+        { role: 'user', content: followUpQuery },
+        { role: 'assistant', content: "Here's your updated analysis.", fullResult: data }
+      ]);
+      setFollowUpQuery('');
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Could not generate follow-up response.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSuggestedFollowUp = (query) => {
+    setFollowUpQuery(query);
+    handleFollowUp();
+  };
+
+  const reset = () => {
+    setConversation([]);
+    setForm({ idea: '', industry: 'SaaS', stage: 'idea' });
+    setFollowUpQuery('');
+    setError(null);
+  };
+
+  const lastResult = conversation.length > 0 ? conversation[conversation.length - 1].fullResult : null;
+  const suggestedFollowUps = [
+    "Explain deeper",
+    "Show examples",
+    "Compare startups",
+    "Give recommendations",
+    "Generate action plan"
+  ];
+
   return (
     <div className="min-h-screen bg-bg">
       <div className="pv-content-container py-12">
         {/* Header */}
         <div className="mb-10">
-          <div className="text-xs font-bold uppercase text-text-muted tracking-[0.2em] mb-2">
-            Founder Tools
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-xs font-bold uppercase text-text-muted tracking-[0.2em] mb-2">
+                Founder Tools
+              </div>
+              <h1 className="text-4xl font-display font-bold text-text-primary mb-3">Founder Playbook</h1>
+            </div>
+            {conversation.length > 0 && (
+              <button
+                onClick={reset}
+                className="pv-btn-secondary flex items-center gap-2"
+              >
+                <RefreshCcw className="w-4 h-4" />
+                New Playbook
+              </button>
+            )}
           </div>
-          <h1 className="text-4xl font-display font-bold text-text-primary mb-3">Founder Playbook</h1>
           <p className="text-text-secondary text-lg max-w-2xl">Generate a validation checklist and strategic plan based on historical failure patterns.</p>
         </div>
 
@@ -102,68 +178,123 @@ const FounderPlaybook = () => {
 
           {/* Right: Report */}
           <div className="lg:col-span-8">
-            {result ? (
+            {conversation.length > 0 && lastResult ? (
               <div className="space-y-6">
-                {/* Summary Card */}
-                <div className="pv-card p-8">
-                  <div className="text-xs font-bold uppercase text-accent tracking-widest mb-3">
-                    Executive Summary
-                  </div>
-                  <h2 className="text-2xl font-display font-bold text-text-primary mb-4">Strategic Playbook</h2>
-                  <p className="text-text-secondary leading-relaxed text-lg">{result.summary}</p>
-                </div>
+                {conversation.map((msg, idx) => (
+                  <div key={idx} className="space-y-6">
+                    {msg.fullResult && idx === conversation.length - 1 && (
+                      <>
+                        {/* Summary Card */}
+                        <div className="pv-card p-8">
+                          <div className="text-xs font-bold uppercase text-accent tracking-widest mb-3">
+                            Executive Summary
+                          </div>
+                          <h2 className="text-2xl font-display font-bold text-text-primary mb-4">Strategic Playbook</h2>
+                          <p className="text-text-secondary leading-relaxed text-lg">{msg.fullResult.summary}</p>
+                        </div>
 
-                {/* Checklist and Risks */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Validation Checklist */}
-                  <div className="pv-card p-6 border-accent/20 bg-surface/20">
-                    <h3 className="font-display font-bold text-accent mb-5 flex items-center gap-2">
-                      <div className="w-1 h-6 bg-accent rounded-full"></div>
-                      Validation Checklist
-                    </h3>
-                    <ul className="space-y-3">
-                      {(result.checklist || []).map((item, i) => (
-                        <li key={i} className="flex gap-3 items-start">
-                          <span className="mt-1.5 w-2 h-2 rounded-full bg-accent shrink-0"></span>
-                          <span className="text-text-secondary">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                        {/* Checklist and Risks */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Validation Checklist */}
+                          <div className="pv-card p-6 border-accent/20 bg-surface/20">
+                            <h3 className="font-display font-bold text-accent mb-5 flex items-center gap-2">
+                              <div className="w-1 h-6 bg-accent rounded-full"></div>
+                              Validation Checklist
+                            </h3>
+                            <ul className="space-y-3">
+                              {(msg.fullResult.checklist || []).map((item, i) => (
+                                <li key={i} className="flex gap-3 items-start">
+                                  <span className="mt-1.5 w-2 h-2 rounded-full bg-accent shrink-0"></span>
+                                  <span className="text-text-secondary">{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
 
-                  {/* Lethal Risks */}
-                  <div className="pv-card p-6 border-danger/20 bg-surface/20">
-                    <h3 className="font-display font-bold text-danger mb-5 flex items-center gap-2">
-                      <div className="w-1 h-6 bg-danger rounded-full"></div>
-                      Lethal Risks
-                    </h3>
-                    <ul className="space-y-3">
-                      {(result.risks || []).map((item, i) => (
-                        <li key={i} className="flex gap-3 items-start">
-                          <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5"></AlertTriangle>
-                          <span className="text-text-secondary">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+                          {/* Lethal Risks */}
+                          <div className="pv-card p-6 border-danger/20 bg-surface/20">
+                            <h3 className="font-display font-bold text-danger mb-5 flex items-center gap-2">
+                              <div className="w-1 h-6 bg-danger rounded-full"></div>
+                              Lethal Risks
+                            </h3>
+                            <ul className="space-y-3">
+                              {(msg.fullResult.risks || []).map((item, i) => (
+                                <li key={i} className="flex gap-3 items-start">
+                                  <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5"></AlertTriangle>
+                                  <span className="text-text-secondary">{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
 
-                {/* Next Steps */}
-                <div className="pv-card p-8 border-accent/20 bg-surface/20">
+                        {/* Next Steps */}
+                        <div className="pv-card p-8 border-accent/20 bg-surface/20">
+                          <h3 className="text-xl font-display font-bold text-text-primary mb-6 flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-accent" />
+                            Recommended Next Steps
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {(msg.fullResult.nextSteps || []).map((step, i) => (
+                              <div key={i} className="border border-border rounded-lg p-5 bg-surface flex items-center gap-4">
+                                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-accent/10 text-accent font-data font-bold text-sm">
+                                  {i + 1}
+                                </span>
+                                <span className="text-text-primary font-medium">{step}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+
+                {/* Follow-up Section */}
+                <div className="pv-card p-8 border-accent/20 bg-surface/30">
                   <h3 className="text-xl font-display font-bold text-text-primary mb-6 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-accent" />
-                    Recommended Next Steps
+                    <HelpCircle className="text-accent w-6 h-6" />
+                    Ask Follow-up Questions
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {(result.nextSteps || []).map((step, i) => (
-                      <div key={i} className="border border-border rounded-lg p-5 bg-surface flex items-center gap-4">
-                        <span className="flex items-center justify-center w-10 h-10 rounded-full bg-accent/10 text-accent font-data font-bold text-sm">
-                          {i + 1}
-                        </span>
-                        <span className="text-text-primary font-medium">{step}</span>
-                      </div>
-                    ))}
+
+                  {/* Suggested Follow-up Chips */}
+                  <div className="mb-6">
+                    <div className="text-xs font-bold uppercase text-text-muted tracking-widest mb-3">Suggested</div>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedFollowUps.map((followUp, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleSuggestedFollowUp(followUp)}
+                          className="px-4 py-2 border border-border rounded-lg bg-surface hover:border-accent/40 hover:bg-surface-2 transition-colors text-sm font-medium"
+                        >
+                          {followUp}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Follow-up Input */}
+                  <form onSubmit={handleFollowUp} className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="Ask a follow-up question..."
+                      className="flex-1 pv-field"
+                      value={followUpQuery}
+                      onChange={e => setFollowUpQuery(e.target.value)}
+                      disabled={loading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading || !followUpQuery.trim()}
+                      className="pv-btn-primary disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </button>
+                  </form>
                 </div>
               </div>
             ) : (
@@ -175,6 +306,7 @@ const FounderPlaybook = () => {
                 </p>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
         </div>
       </div>
