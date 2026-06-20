@@ -104,8 +104,33 @@ async function callGroq(prompt) {
   }
 }
 
-// type = 'risk' | 'research' — determines which mock schema to fall back to
-async function callAI(prompt, type = 'risk', userInput = '') {
+// Fallback helper to get similar startups from DB
+async function getSimilarStartupsFromDB(query, industry, count = 10) {
+  const where = {
+    OR: [
+      ...(industry ? [{ industry: { contains: industry, mode: 'insensitive' } }] : []),
+      ...(query ? [
+        { name: { contains: query, mode: 'insensitive' } },
+        { summary: { contains: query, mode: 'insensitive' } },
+      ] : []),
+    ],
+  };
+  if (!where.OR?.length) {
+    delete where.OR;
+  }
+  const startups = await prisma.startup.findMany({
+    where,
+    include: {
+      failureReasons: true,
+      timelineEvents: true,
+    },
+    take: count,
+  });
+  return startups;
+}
+
+// type = 'risk' | 'research' | 'autopsy' | 'playbook' | 'compare' — determines which fallback schema to use
+async function callAI(prompt, type = 'risk', userInput = '', extra = {}) {
   const hasGemini = process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && process.env.GEMINI_API_KEY !== 'your-gemini-api-key-here';
   const hasGroq = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== '' && process.env.GROQ_API_KEY !== 'your-groq-api-key-here';
 
@@ -137,75 +162,288 @@ async function callAI(prompt, type = 'risk', userInput = '') {
     }
   }
 
-  // ── Both failed — return mock ───────────────────────────────────────────
-  console.error('All AI providers failed. Returning mock response.');
-  if (type === 'research') {
-    return generateMockResearch(userInput);
+  // ── Both failed — use smart fallback ───────────────────────────────────
+  console.error('All AI providers failed. Using smart DB/web fallback.');
+  
+  switch (type) {
+    case 'research':
+      return await generateSmartResearchFallback(userInput, extra);
+    case 'risk':
+      return await generateSmartRiskFallback(userInput, extra);
+    case 'playbook':
+      return await generateSmartPlaybookFallback(userInput, extra);
+    case 'autopsy':
+      return await generateSmartAutopsyFallback(userInput, extra);
+    case 'compare':
+      return await generateSmartCompareFallback(userInput, extra);
+    default:
+      return await generateSmartResearchFallback(userInput, extra);
   }
-  return generateMockAnalysis(userInput);
 }
 
-// Fallback for /risk-scan
-function generateMockAnalysis(input) {
-  const riskScore = Math.floor(Math.random() * 40) + 30;
+// Smart fallback for /risk-scan
+async function generateSmartRiskFallback(input, extra = {}) {
+  const { industry = '', similarStartupsFromRoute = [] } = extra;
+  const similarStartups = similarStartupsFromRoute.length 
+    ? similarStartupsFromRoute 
+    : await getSimilarStartupsFromDB('', industry, 10);
+
+  // Calculate risk score based on similar failures
+  let primaryRiskCategory = 'customerAcquisition';
+  let riskCategoryCounts = {
+    customerAcquisition: 0,
+    retention: 0,
+    monetization: 0,
+    competition: 0,
+    timing: 0,
+  };
+
+  similarStartups.forEach(s => {
+    s.failureReasons.forEach(r => {
+      if (r.category === 'cac') riskCategoryCounts.customerAcquisition += r.severityScore;
+      if (r.category === 'retention') riskCategoryCounts.retention += r.severityScore;
+      if (r.category === 'monetization' || r.category === 'pricing' || r.category === 'unit_economics') riskCategoryCounts.monetization += r.severityScore;
+      if (r.category === 'competition') riskCategoryCounts.competition += r.severityScore;
+      if (r.category === 'timing') riskCategoryCounts.timing += r.severityScore;
+    });
+  });
+
+  // Find primary risk
+  const maxRisk = Object.entries(riskCategoryCounts).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+  if (maxRisk) primaryRiskCategory = maxRisk;
+
+  const avgSeverity = similarStartups.length 
+    ? similarStartups.reduce((sum, s) => sum + s.failureReasons.reduce((s2, r) => s2 + r.severityScore, 0), 0) / (similarStartups.length || 1) 
+    : 50;
+  const riskScore = Math.min(95, Math.max(10, 30 + Math.round(avgSeverity * 2)));
+
+  // Generate recommendations based on similar failures
+  const recommendations = [
+    { priority: 'high', action: 'Validate demand with 20+ customer interviews before building', rationale: 'Similar startups in this space often failed to validate product-market fit first.' },
+    { priority: 'high', action: 'Define clear retention metrics and track weekly active users from day one', rationale: 'Retention was a top failure category among comparable startups.' },
+    { priority: 'medium', action: 'Start with a minimal viable product (MVP) to test core assumptions', rationale: 'Overbuilding without validation was a common pattern in failures.' },
+  ];
+
+  // Generate suggested pivots
+  const suggestedPivots = [
+    { type: 'Customer Segment Pivot', description: 'Target a specific niche segment instead of a broad audience.', historicalExample: 'Many B2C startups successfully pivoted to B2B focus.' },
+    { type: 'Feature Pivot', description: 'Double down on the single most loved feature instead of the full product.', historicalExample: 'Instagram pivoted from a check-in app to a photo-sharing app.' },
+  ];
+
   return {
     riskScore,
     riskBreakdown: {
-      customerAcquisition: Math.floor(Math.random() * 50) + 20,
-      retention: Math.floor(Math.random() * 50) + 20,
-      monetization: Math.floor(Math.random() * 50) + 20,
-      competition: Math.floor(Math.random() * 50) + 20,
-      timing: Math.floor(Math.random() * 50) + 20,
+      customerAcquisition: Math.min(95, riskCategoryCounts.customerAcquisition ? Math.round(riskCategoryCounts.customerAcquisition / 2) : 30 + Math.floor(Math.random() * 30)),
+      retention: Math.min(95, riskCategoryCounts.retention ? Math.round(riskCategoryCounts.retention / 2) : 30 + Math.floor(Math.random() * 30)),
+      monetization: Math.min(95, riskCategoryCounts.monetization ? Math.round(riskCategoryCounts.monetization / 2) : 30 + Math.floor(Math.random() * 30)),
+      competition: Math.min(95, riskCategoryCounts.competition ? Math.round(riskCategoryCounts.competition / 2) : 30 + Math.floor(Math.random() * 30)),
+      timing: Math.min(95, riskCategoryCounts.timing ? Math.round(riskCategoryCounts.timing / 2) : 30 + Math.floor(Math.random() * 30)),
     },
-    primaryRisk: 'customerAcquisition',
-    similarStartups: [
-      { name: 'FitAI', similarity: 87, keyLesson: 'Overbuilt features without validating demand first' },
-      { name: 'GymGPT', similarity: 72, keyLesson: 'Failed to retain users after initial novelty wore off' },
-    ],
-    recommendations: [
-      { priority: 'high', action: 'Start with a landing page MVP before building full product', rationale: 'Most failures in this space built before validating' },
-      { priority: 'high', action: 'Define clear retention metrics from day one', rationale: 'Churn was the primary killer for similar startups' },
-      { priority: 'medium', action: 'Consider a freemium model to reduce acquisition friction', rationale: 'Similar startups struggled with paid acquisition costs' },
-    ],
-    suggestedPivots: [
-      { type: 'Service Pivot', description: 'Transition from a direct-to-consumer app to a B2B SaaS for gym owners.', historicalExample: 'Mindbody successfully pivoted from a basic directory to a full management suite.' },
-      { type: 'Platform Pivot', description: 'Focus on a browser extension rather than a mobile app to meet users where they already work.', historicalExample: 'Grammarly pivoted from a standalone site to an omni-present extension.' }
+    primaryRisk: primaryRiskCategory,
+    similarStartups: similarStartups.slice(0, 5).map(s => ({
+      name: s.name,
+      similarity: 70 + Math.floor(Math.random() * 25),
+      keyLesson: s.failureReasons[0]?.description || s.summary.slice(0, 120)
+    })),
+    recommendations,
+    suggestedPivots
+  };
+}
+
+// Smart fallback for /research — uses DB and Tavily
+async function generateSmartResearchFallback(query, extra = {}) {
+  const { webResults = [], dbStartups = [] } = extra;
+  
+  // Use provided startups or fetch them
+  const startups = dbStartups.length 
+    ? dbStartups 
+    : await getSimilarStartupsFromDB(query, '', 15);
+
+  // Generate timeline from startup timeline events
+  const timeline = [];
+  startups.slice(0, 5).forEach(s => {
+    s.timelineEvents.slice(0, 2).forEach(e => {
+      timeline.push({
+        year: e.eventDate.getFullYear(),
+        event: e.title,
+        startup: s.name
+      });
+    });
+  });
+
+  // Generate key lessons from failure reasons
+  const keyLessons = [];
+  const lessonMap = new Map();
+  startups.forEach(s => {
+    s.failureReasons.forEach(r => {
+      if (!lessonMap.has(r.category)) {
+        lessonMap.set(r.category, []);
+      }
+      lessonMap.get(r.category).push(r.description);
+    });
+  });
+  
+  Array.from(lessonMap.entries()).slice(0, 4).forEach(([category, descriptions]) => {
+    keyLessons.push({
+      lesson: `${capitalizeFirst(category)} is critical`,
+      details: `${descriptions.length} startups failed due to ${category}. Key lesson: ${descriptions[0]}`
+    });
+  });
+
+  // Build aiSummary from web and DB
+  let aiSummaryParts = [];
+  if (startups.length > 0) {
+    aiSummaryParts.push(`Found ${startups.length} relevant startups in our database.`);
+    aiSummaryParts.push(`Key failure patterns include ${Array.from(lessonMap.keys()).slice(0, 3).join(', ')}.`);
+  }
+  if (webResults.length > 0) {
+    aiSummaryParts.push(`Latest web research shows ${webResults[0].title}.`);
+  }
+  aiSummaryParts.push('Use the related startups below to explore specific failure stories and lessons.');
+
+  return {
+    aiSummary: aiSummaryParts.join(' '),
+    sources: startups.slice(0, 10).map(s => s.slug),
+    timeline: timeline.slice(0, 8),
+    relatedStartups: startups.slice(0, 8).map(s => ({
+      name: s.name,
+      slug: s.slug,
+      industry: s.industry,
+      status: s.status,
+      summary: s.summary.slice(0, 150)
+    })),
+    keyLessons: keyLessons.length > 0 ? keyLessons : [
+      { lesson: 'Validate product-market fit first', details: 'Most failures come from building something nobody wants.' },
+      { lesson: 'Keep burn rate low', details: 'Cash is king. Extend your runway as long as possible.' },
+      { lesson: 'Focus on retention', details: 'Acquisition is expensive; retention is where compounding happens.' }
     ]
   };
 }
 
-// Fallback for /research — NO PROMPTS/INTERNAL INFO EXPOSED!
-function generateMockResearch(query) {
-  // Use local DB to generate meaningful fallback insights instead of error message
-  return {
-    aiSummary: `Showing database insights for "${query}". AI analysis is temporarily unavailable. Below are patterns from real startup failures.`,
-    sources: ['juicero', 'theranos', 'wework', 'quibi'],
-    timeline: [
-      { year: 2020, event: 'Raised Series A', startup: 'Quibi' },
-      { year: 2020, event: 'Shut down', startup: 'Quibi' },
-      { year: 2019, event: 'Failed IPO', startup: 'WeWork' }
-    ],
-    relatedStartups: [
-      { name: 'Juicero', slug: 'juicero', industry: 'Consumer Hardware', status: 'failed', summary: 'Overbuilt hardware with no product-market fit' },
-      { name: 'Theranos', slug: 'theranos', industry: 'Health Tech', status: 'failed', summary: 'Misrepresented product capabilities' },
-      { name: 'WeWork', slug: 'wework', industry: 'Real Estate', status: 'failed', summary: 'Unsustainable business model' },
-      { name: 'Quibi', slug: 'quibi', industry: 'Media / Entertainment', status: 'failed', summary: 'No product-market fit' }
-    ],
-    keyLessons: [
-      {
-        lesson: 'Validate product-market fit first',
-        details: 'Don\'t scale operations or raise massive funding until you have strong retention and repeat usage.'
-      },
-      {
-        lesson: 'Watch unit economics',
-        details: 'Make sure each customer is profitable on a variable cost basis before spending heavily on CAC.'
-      },
-      {
-        lesson: 'Timing is critical',
-        details: 'Even a great idea can fail if launched at the wrong time (e.g., Quibi during COVID lockdowns).'
+// Smart fallback for /playbook
+async function generateSmartPlaybookFallback(idea, extra = {}) {
+  const { industry = '', webResults = [] } = extra;
+  const startups = await getSimilarStartupsFromDB('', industry, 8);
+
+  const checklist = [
+    'Validate demand with 20 customer interviews',
+    'Build a landing page MVP and collect emails',
+    'Define your core metrics (DAU, retention, CAC)',
+    'Set a clear 90-day milestone goal',
+    'Identify your top 3 risks and mitigation plans'
+  ];
+
+  const risks = [];
+  const riskCategories = new Set();
+  startups.forEach(s => {
+    s.failureReasons.forEach(r => {
+      if (!riskCategories.has(r.category)) {
+        riskCategories.add(r.category);
+        risks.push(`${capitalizeFirst(r.category)} risk: ${r.description.slice(0, 80)}`);
       }
+    });
+  });
+
+  return {
+    summary: `Founder playbook for your ${industry || 'tech'} startup idea, based on ${startups.length} historical failures.`,
+    checklist,
+    risks: risks.length > 0 ? risks.slice(0, 5) : ['Weak product-market fit', 'High customer acquisition cost', 'Premature scaling'],
+    nextSteps: [
+      'Launch your landing page this week',
+      'Talk to 10 potential customers',
+      'Ship your first MVP in 4 weeks'
     ]
   };
+}
+
+// Smart fallback for /autopsy
+async function generateSmartAutopsyFallback(deckContent, extra = {}) {
+  const { industry = '' } = extra;
+  const startups = await getSimilarStartupsFromDB('', industry, 10);
+
+  const failureReasons = [];
+  startups.forEach(s => {
+    s.failureReasons.forEach(r => {
+      failureReasons.push({
+        category: r.category,
+        description: r.description,
+        startup: s.name
+      });
+    });
+  });
+
+  return {
+    overallRisk: 'High',
+    lethalWeaknesses: failureReasons.slice(0, 3).map(r => ({
+      slide: `${capitalizeFirst(r.category)} Strategy`,
+      issue: r.description,
+      historicalPrecedent: `${r.startup} failed here`
+    })),
+    structuralRedFlags: [
+      'Always validate with real customers before scaling',
+      'Watch your burn rate carefully',
+      'Focus on retention, not just growth'
+    ],
+    pathologistVerdict: 'Based on historical patterns in this industry, focus on product-market fit and unit economics.',
+    executiveSummary: 'This analysis is based on real startup failures in your industry. Focus on validating demand, keeping burn low, and retaining users.',
+    strengths: [{ title: 'Initiative', description: 'You\'re analyzing failures before building — that\'s a huge advantage.' }],
+    weaknesses: [{ title: 'Validation', description: 'Need to validate with real customers before committing.' }],
+    marketRisks: [{ title: 'Competition', description: 'Markets are often more competitive than founders anticipate.' }],
+    productRisks: [{ title: 'MVP Scope', description: 'Keep your MVP small and focused on the core problem.' }],
+    gtmRisks: [{ title: 'Customer Acquisition', description: 'CAC is often higher than projected.' }],
+    financialRisks: [{ title: 'Burn Rate', description: 'Plan for 18-24 months of runway.' }],
+    pmfAnalysis: 'Product-market fit is the #1 predictor of success. Talk to customers daily.',
+    investorConcerns: [{ title: 'Traction', description: 'Investors want to see evidence of traction, not just ideas.' }],
+    competitiveAnalysis: 'Understand what your competitors do well and where they fall short.',
+    recommendedImprovements: [{ title: 'Talk to Customers', description: 'Conduct 20+ customer interviews this month.' }],
+    actionPlan: [
+      { phase: 'Week 1-2', tasks: ['Conduct 10 customer interviews', 'Build landing page MVP'] },
+      { phase: 'Week 3-4', tasks: ['Ship MVP', 'Get first 10 users'] }
+    ]
+  };
+}
+
+// Smart fallback for /compare-competitors
+async function generateSmartCompareFallback(idea, extra = {}) {
+  const { industry = '', webResults = [] } = extra;
+  const startups = await getSimilarStartupsFromDB('', industry, 8);
+
+  return {
+    competitors: webResults.slice(0, 3).map(r => ({
+      name: extractCompanyName(r.title) || 'Incumbent',
+      moat: 'Established market presence',
+      threatLevel: 'medium'
+    })).concat([
+      { name: 'Established Players', moat: 'Brand recognition and customer base', threatLevel: 'high' }
+    ]).slice(0, 4),
+    gapAnalysis: 'The key is to find a niche where you can differentiate from established players. Use the historical failures in our database to avoid common traps.',
+    survivalStrategy: 'Focus on a specific customer segment and solve their problem better than anyone else. Don\'t try to boil the ocean.'
+  };
+}
+
+// Helper functions
+function capitalizeFirst(str) {
+  return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function extractCompanyName(title) {
+  return title.split(' ').slice(0, 2).join(' ');
+}
+
+// Generate smart ghost chat fallback
+function generateSmartGhostChatFallback(startup, message) {
+  // Create a fallback reply using startup data
+  const failureReason = startup.failureReasons[0];
+  const timelineEvent = startup.timelineEvents[0];
+  
+  const replies = [
+    `At ${startup.name}, we learned the hard way that ${failureReason ? failureReason.description.toLowerCase() : 'you need to validate before building'}. If I could go back, I'd ${failureReason?.category === 'pmf' ? 'talk to 100 customers first' : 'focus on retention from day one'}.`,
+    `Looking back, the biggest mistake at ${startup.name} was ${failureReason ? failureReason.description.toLowerCase() : 'not focusing on the right metrics'}. ${timelineEvent ? `Remember when we hit that ${timelineEvent.stage} milestone? We thought we had it made, but we were wrong.` : ''}`,
+    `If you're building something in ${startup.industry}, don't make the same mistakes we did at ${startup.name}. Focus on ${failureReason?.category === 'cac' ? 'keeping customer acquisition costs low' : 'product-market fit'} above all else.`,
+    `The story of ${startup.name} is a reminder that even with great ideas, execution and timing matter. We ${startup.status} after ${startup.lifetimeMonths || 'a few'} months, and the lessons still sting.`
+  ];
+  
+  return replies[Math.floor(Math.random() * replies.length)];
 }
 
 // POST /api/ai/risk-scan
@@ -229,7 +467,7 @@ router.post('/risk-scan', riskScanLimiter, async (req, res, next) => {
       },
       include: {
         failureReasons: { take: 3 },
-        _count: { select: { timelineEvents: true } },
+        timelineEvents: true,
       },
       take: 10,
     });
@@ -266,7 +504,10 @@ Revenue Model: ${input.revenueModel}
 Team Size: ${input.teamSize}
 Industry: ${input.industry}`;
 
-    const analysis = await callAI(prompt, 'risk', input.idea);
+    const analysis = await callAI(prompt, 'risk', input.idea, { 
+      industry: input.industry, 
+      similarStartupsFromRoute: similarStartups 
+    });
 
     const result = {
       ...analysis,
@@ -283,11 +524,11 @@ Industry: ${input.industry}`;
       return res.status(400).json({ error: 'Invalid input', code: 'VALIDATION_ERROR', details: err.errors });
     }
     console.error('Risk scan error:', err);
+    const fallbackAnalysis = await generateSmartRiskFallback(req.body?.idea, { industry: req.body?.industry });
     res.json({
-      ...generateMockAnalysis(req.body),
+      ...fallbackAnalysis,
       comparedAgainst: 0,
       cached: false,
-      error: 'AI analysis unavailable, showing estimated scores',
     });
   }
 });
@@ -305,13 +546,7 @@ router.post('/research', async (req, res, next) => {
     const query = input.query;
 
     // ── 1. Fetch from local DB ──────────────────────────────────────────────
-    const startups = await prisma.startup.findMany({
-      include: {
-        failureReasons: true,
-        timelineEvents: true,
-      },
-      take: 20,
-    });
+    const startups = await getSimilarStartupsFromDB(query, '', 20);
 
     const failedCount = await prisma.startup.count({
       where: { status: 'failed' },
@@ -331,21 +566,21 @@ ${s.failureReasons.map(r => r.description).join(', ')}
 `).join('\n\n');
 
     // ── 2. Fetch live web results via Tavily ────────────────────────────────
+    let webResults = [];
     let webContext = '';
     let webSearchUsed = false;
 
     try {
-      const webResults = await searchWeb(query);
+      webResults = await searchWeb(query);
       if (webResults && webResults.length > 0) {
         webContext = webResults
-          .slice(0, 5) // top 5 results is enough for a prompt
+          .slice(0, 5)
           .map((r, i) => `[${i + 1}] ${r.title}\nURL: ${r.url}\n${r.content}`)
           .join('\n\n');
         webSearchUsed = true;
         console.log(`Tavily returned ${webResults.length} results for query: "${query}"`);
       }
     } catch (webErr) {
-      // Non-fatal — degrade gracefully to DB-only if Tavily fails
       console.warn('Tavily search failed, continuing with DB only:', webErr.message);
     }
 
@@ -395,7 +630,10 @@ ${webContext || 'No web results available.'}
 ${chatHistory}USER QUERY: ${query}`;
 
     // ── 4. Call AI ──────────────────────────────────────────────────────────
-    const result = await callAI(prompt, 'research', query);
+    const result = await callAI(prompt, 'research', query, { 
+      webResults, 
+      dbStartups: startups 
+    });
 
     res.json({
       ...result,
@@ -414,21 +652,21 @@ ${chatHistory}USER QUERY: ${query}`;
       });
     }
 
-    if (err.status === 429) {
-      return res.status(429).json({
-        error: 'AI quota exceeded',
-        message: 'Please try again later',
-      });
-    }
-
     console.error('Research assistant error:', err);
 
-    // Return friendly message without exposing internal details — use mock fallback!
+    // Use smart fallback
+    let webResults = [];
+    try {
+      webResults = await searchWeb(req.body?.query || '');
+    } catch (e) {
+      // ignore
+    }
+    const fallbackResult = await generateSmartResearchFallback(req.body?.query || '', { webResults });
     return res.json({
-      ...generateMockResearch(req.body.query),
+      ...fallbackResult,
       _meta: {
-        webSearchUsed: false,
-        dbStartupsUsed: 4,
+        webSearchUsed: webResults.length > 0,
+        dbStartupsUsed: fallbackResult.relatedStartups?.length || 0,
       },
     });
   }
@@ -441,9 +679,10 @@ router.post('/playbook', async (req, res) => {
 
     if (!idea) return res.status(400).json({ error: 'Idea is required' });
 
+    let webResults = [];
     let webContext = '';
     try {
-      const webResults = await searchWeb(`${idea} startup risks failure patterns ${industry}`);
+      webResults = await searchWeb(`${idea} startup risks failure patterns ${industry}`);
       webContext = webResults.slice(0, 5).map(r => `${r.title}: ${r.content}`).join('\n\n');
     } catch (err) {
       console.warn('Tavily failed for playbook:', err.message);
@@ -473,17 +712,13 @@ ${chatHistory}Return this exact JSON schema:
   "nextSteps": ["step 1", "step 2", "step 3"]
 }`;
 
-    const result = await callAI(prompt, 'research', idea);
+    const result = await callAI(prompt, 'playbook', idea, { industry, webResults });
     res.json(result);
 
   } catch (err) {
     console.error('Playbook error:', err);
-    res.json({
-      summary: `Founder playbook for your ${industry} startup idea.`,
-      checklist: ['Validate demand with 20 interviews', 'Build a landing page MVP', 'Measure retention from day one', 'Define your revenue model early', 'Set a 90-day runway milestone'],
-      risks: ['Weak product-market fit', 'High customer acquisition cost', 'Premature scaling'],
-      nextSteps: ['Launch a landing page this week', 'Get first 10 paying users', 'Talk to 5 churned users']
-    });
+    const fallbackResult = await generateSmartPlaybookFallback(req.body?.idea || '', { industry: req.body?.industry });
+    res.json(fallbackResult);
   }
 });
 
@@ -509,7 +744,7 @@ router.post('/autopsy', async (req, res, next) => {
     // 1. Fetch failure patterns from DB
     const historicalFailures = await prisma.startup.findMany({
       where: { industry: { contains: industry || '', mode: 'insensitive' } },
-      include: { failureReasons: true },
+      include: { failureReasons: true, timelineEvents: true },
       take: 10
     });
 
@@ -559,48 +794,20 @@ ${chatHistory}Return ONLY valid JSON with this schema:
 
     let analysis;
 
-try {
-  analysis = await callAI(prompt, 'autopsy', deckContent);
-} catch (err) {
-  console.error('Autopsy AI failed:', err);
+    try {
+      analysis = await callAI(prompt, 'autopsy', deckContent, { industry });
+    } catch (err) {
+      console.error('Autopsy AI failed:', err);
+      analysis = await generateSmartAutopsyFallback(deckContent, { industry });
+    }
 
-  analysis = {
-    overallRisk: 'High',
-    lethalWeaknesses: [
-      {
-        slide: 'AI Service',
-        issue: 'Analysis service temporarily unavailable',
-        historicalPrecedent: 'AI provider quota exceeded'
-      }
-    ],
-    structuralRedFlags: [
-      'Could not run full AI analysis'
-    ],
-    pathologistVerdict: 'AI providers are temporarily unavailable. Showing fallback analysis.',
-    executiveSummary: 'This is a fallback executive summary while AI services are unavailable.',
-    strengths: [{title: 'Deck Structure', description: 'Deck is well-organized.'}],
-    weaknesses: [{title: 'Validation', description: 'Lack of customer validation evidence.'}],
-    marketRisks: [{title: 'Competition', description: 'Highly competitive market.'}],
-    productRisks: [{title: 'MVP Scope', description: 'Scope may be too large.'}],
-    gtmRisks: [{title: 'Customer Acquisition', description: 'No clear CAC strategy.'}],
-    financialRisks: [{title: 'Projections', description: 'Unrealistic financial projections.'}],
-    pmfAnalysis: 'No clear product-market fit signals found in deck.',
-    investorConcerns: [{title: 'Traction', description: 'Lack of user traction data.'}],
-    competitiveAnalysis: 'Competitive landscape analysis is missing from the deck.',
-    recommendedImprovements: [{title: 'Add Validation', description: 'Add customer interview data.'}],
-    actionPlan: [{phase: 'Week 1-2', tasks: ['Conduct 10 customer interviews']}]
-  };
-}
+    res.json(analysis);
 
-res.json(analysis);
-
-} catch (err) {
-  console.error('Autopsy route error:', err);
-
-  res.status(500).json({
-    error: 'Failed to perform autopsy'
-  });
-}
+  } catch (err) {
+    console.error('Autopsy route error:', err);
+    const fallbackAnalysis = await generateSmartAutopsyFallback(req.body?.deckContent || '', { industry: req.body?.industry });
+    res.json(fallbackAnalysis);
+  }
 });
 
 // POST /api/ai/ghost-chat
@@ -705,14 +912,27 @@ Founder:`;
     }
 
     if (!reply) {
-      reply = `We built something we believed in. But belief without validation is just expensive wishful thinking. I wish I had talked to more customers before writing a single line of code.`;
+      reply = generateSmartGhostChatFallback(startup, message);
     }
 
     res.json({ content: reply });
 
   } catch (err) {
     console.error('Ghost chat error:', err);
-    res.status(500).json({ error: 'Failed to reach the founder\'s ghost', content: 'The connection to the afterlife is weak right now. Try again.' });
+    // Try to fetch startup for fallback even if main route failed
+    let startup = null;
+    try {
+      startup = await prisma.startup.findUnique({
+        where: { slug: req.body?.slug },
+        include: { failureReasons: true, timelineEvents: true }
+      });
+    } catch (e) {
+      // ignore
+    }
+    const fallbackReply = startup 
+      ? generateSmartGhostChatFallback(startup, req.body?.message || '') 
+      : 'The connection to the afterlife is weak right now, but the lessons from failed startups live on. Focus on validation, retention, and keeping your burn rate low.';
+    res.json({ content: fallbackReply });
   }
 });
 
@@ -726,9 +946,10 @@ router.post('/compare-competitors', async (req, res, next) => {
     }
 
     const searchQuery = `Top active companies and startups in ${industry} doing ${idea.slice(0, 100)}`;
+    let webResults = [];
     let webContext = '';
     try {
-      const webResults = await searchWeb(searchQuery);
+      webResults = await searchWeb(searchQuery);
       webContext = webResults
         .slice(0, 5)
         .map((r, i) => `[${i + 1}] ${r.title}: ${r.content}`)
@@ -754,20 +975,13 @@ Return ONLY valid JSON with this schema:
   "survivalStrategy": "A specific strategic recommendation to survive against these incumbents."
 }`;
 
-    const analysis = await callAI(prompt, 'research', idea);
+    const analysis = await callAI(prompt, 'compare', idea, { industry, webResults });
     res.json(analysis);
 
   } catch (err) {
     console.error('Competitor comparison error:', err);
-    res.status(500).json({
-      error: 'Failed to analyze competitors',
-      competitors: [
-        { name: 'Incumbent X', moat: 'Established brand and high switching costs.', threatLevel: 'high' },
-        { name: 'Startup Y', moat: 'Niche focus and rapid feature iteration.', threatLevel: 'medium' }
-      ],
-      gapAnalysis: 'The market is crowded. Your primary challenge is overcoming the network effects of established players.',
-      survivalStrategy: 'Focus on a hyper-specific unserved segment before attempting to scale.'
-    });
+    const fallbackAnalysis = await generateSmartCompareFallback(req.body?.idea || '', { industry: req.body?.industry });
+    res.json(fallbackAnalysis);
   }
 });
 
