@@ -3,9 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Filter, X, SlidersHorizontal, ArrowUpDown, ChevronDown, AlertTriangle } from 'lucide-react';
 import StartupCard from '../components/StartupCard';
 import SearchInput from '../components/ui/SearchInput';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 const FailureExplorer = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,7 +24,7 @@ const FailureExplorer = () => {
     const fetchStartups = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${API_URL}/api/startups`, {
+        const response = await api.get('/startups', {
           params: Object.fromEntries(searchParams)
         });
         setStartups(response.data.data);
@@ -92,86 +90,104 @@ const FailureExplorer = () => {
       {/* Industry Filter */}
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Industry</label>
-        <select 
-          className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
-          value={industry}
-          onChange={(e) => handleFilterChange('industry', e.target.value)}
-        >
-          <option value="">All Industries</option>
-          {industries.map((ind) => (
-            <option key={ind} value={ind}>{ind}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select 
+            className="w-full bg-surface-2 border border-border rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+            value={industry}
+            onChange={(e) => handleFilterChange('industry', e.target.value)}
+          >
+            <option value="">All Industries</option>
+            {industries.map((ind) => (
+              <option key={ind} value={ind}>{ind}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+        </div>
       </div>
 
       {/* Status Filter */}
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Status</label>
-        <select 
-          className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
-          value={status}
-          onChange={(e) => handleFilterChange('status', e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          <option value="failed">Failed / Liquidated</option>
-          <option value="acquired">Acquired / Asset Sale</option>
-          <option value="pivoted">Pivoted / Rebranded</option>
-          <option value="zombie">Zombie State</option>
-        </select>
+        <div className="relative">
+          <select 
+            className="w-full bg-surface-2 border border-border rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+            value={status}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="failed">Failed / Liquidated</option>
+            <option value="acquired">Acquired / Asset Sale</option>
+            <option value="pivoted">Pivoted / Rebranded</option>
+            <option value="zombie">Zombie State</option>
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+        </div>
       </div>
 
       {/* Failure Mode Filter */}
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Failure Mode</label>
-        <select 
-          className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
-          value={category}
-          onChange={(e) => handleFilterChange('category', e.target.value)}
-        >
-          <option value="">All Modes</option>
-          {failureCategories.map((cat) => (
-            <option key={cat.key} value={cat.key}>{cat.label}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select 
+            className="w-full bg-surface-2 border border-border rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+            value={category}
+            onChange={(e) => handleFilterChange('category', e.target.value)}
+          >
+            <option value="">All Modes</option>
+            {failureCategories.map((cat) => (
+              <option key={cat.key} value={cat.key}>{cat.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+        </div>
       </div>
 
       {/* Country Filter */}
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Country</label>
-        <select 
-          className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
-          value={country}
-          onChange={(e) => handleFilterChange('country', e.target.value)}
-        >
-          <option value="">All Countries</option>
-          <option value="USA">USA</option>
-          <option value="India">India</option>
-          <option value="Europe">Europe</option>
-        </select>
+        <div className="relative">
+          <select 
+            className="w-full bg-surface-2 border border-border rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+            value={country}
+            onChange={(e) => handleFilterChange('country', e.target.value)}
+          >
+            <option value="">All Countries</option>
+            <option value="USA">USA</option>
+            <option value="India">India</option>
+            <option value="Europe">Europe</option>
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+        </div>
       </div>
 
       {/* Sort */}
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Sort By</label>
         <div className="grid grid-cols-2 gap-2">
-          <select 
-            className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
-            value={sort}
-            onChange={(e) => handleFilterChange('sort', e.target.value)}
-          >
-            <option value="name">Name</option>
-            <option value="funding">Capital Raised</option>
-            <option value="lifetime">Lifespan</option>
-            <option value="users">Peak Users</option>
-          </select>
-          <select 
-            className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
-            value={order}
-            onChange={(e) => handleFilterChange('order', e.target.value)}
-          >
-            <option value="desc">Desc</option>
-            <option value="asc">Asc</option>
-          </select>
+          <div className="relative">
+            <select 
+              className="w-full bg-surface-2 border border-border rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+              value={sort}
+              onChange={(e) => handleFilterChange('sort', e.target.value)}
+            >
+              <option value="name">Name</option>
+              <option value="funding">Capital Raised</option>
+              <option value="lifetime">Lifespan</option>
+              <option value="users">Peak Users</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select 
+              className="w-full bg-surface-2 border border-border rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+              value={order}
+              onChange={(e) => handleFilterChange('order', e.target.value)}
+            >
+              <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+          </div>
         </div>
       </div>
     </div>

@@ -4,9 +4,7 @@ import { Sparkles, AlertTriangle, ArrowRight, TrendingUp, BarChart3, Database, S
 import StartupCard from '../components/StartupCard';
 import LiveIntelPulse from '../components/LiveIntelPulse';
 import SearchInput from '../components/ui/SearchInput';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -17,7 +15,7 @@ const LandingPage = () => {
   React.useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/startups?limit=4`);
+        const response = await api.get('/startups?limit=4');
         setFeatured(response.data.data);
       } catch (err) {
         console.error(err);
@@ -46,10 +44,10 @@ const LandingPage = () => {
   ];
 
   const trendingPatterns = [
-    { category: 'pmf', label: 'No Product-Market Fit', share: '38%', color: 'text-danger', desc: 'Building products that have zero validated market demand or utility.' },
-    { category: 'unit_economics', label: 'Broken Unit Economics', share: '24%', color: 'text-warning', desc: 'Logistics, delivery, or operational costs exceeding customer price points.' },
-    { category: 'cashflow', label: 'Fatal Cash Burn', share: '18%', color: 'text-accent', desc: 'Scaling operations and marketing spend before contribution-positive.' },
-    { category: 'competition', label: 'Incumbent Displacement', share: '12%', color: 'text-info', desc: 'Outcompeted by larger tech companies entering the niche with default placement.' }
+    { category: 'pmf', label: 'Product-Market Fit Gaps', share: '38%', color: 'text-danger', desc: 'Building product features before verifying validated customer demand and utility.' },
+    { category: 'unit_economics', label: 'Unscalable Unit Economics', share: '24%', color: 'text-warning', desc: 'High fulfillment or customer acquisition costs outpacing pricing models.' },
+    { category: 'cashflow', label: 'Premature Scaling Burn', share: '18%', color: 'text-accent', desc: 'Accelerating operational and marketing spend before achieving positive margins.' },
+    { category: 'competition', label: 'Incumbent Competition', share: '12%', color: 'text-info', desc: 'Facing pressure from established players with massive distribution advantages.' }
   ];
 
   const industryHeatmap = [
@@ -81,34 +79,34 @@ const LandingPage = () => {
             </p>
 
             {/* Search Bar */}
-          <div className="max-w-2xl mb-8">
-            <form onSubmit={(e) => handleSearch(e, 'explore')} className="flex gap-3">
-              <SearchInput
-                placeholder="Search startup name, industry, or failure reason..."
-                className="flex-1"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="bg-accent hover:bg-accent-2 text-accent-contrast font-semibold px-6 py-3 rounded-lg transition-colors"
-              >
-                Explore
-              </button>
-              <button
-                type="button"
-                onClick={(e) => handleSearch(e, 'ai')}
-                className="border border-border bg-surface-2 hover:bg-surface-3 text-text-primary font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                Ask AI
-              </button>
-            </form>
-          </div>
+            <div className="max-w-2xl mb-8">
+              <form onSubmit={(e) => handleSearch(e, 'explore')} className="flex gap-3">
+                <SearchInput
+                  placeholder="Search a startup, industry, or lesson learned..."
+                  className="flex-1"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="bg-accent hover:bg-accent-2 text-accent-contrast font-semibold px-6 py-3 rounded-lg transition-colors"
+                >
+                  Explore
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleSearch(e, 'ai')}
+                  className="border border-border bg-surface-2 hover:bg-surface-3 text-text-primary font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Ask AI
+                </button>
+              </form>
+            </div>
 
             {/* Sample Prompts */}
-            <div className="flex flex-wrap gap-2">
-              <span className="text-sm text-text-muted">Try:</span>
+            <div className="flex flex-row flex-nowrap items-center overflow-x-auto scrollbar-none gap-2 py-1 max-w-full lg:flex-wrap lg:overflow-visible">
+              <span className="text-sm text-text-muted shrink-0">Try:</span>
               {samplePrompts.map((prompt, i) => (
                 <button
                   key={i}
@@ -116,7 +114,7 @@ const LandingPage = () => {
                     setSearch(prompt);
                     navigate(`/assistant?q=${encodeURIComponent(prompt)}`);
                   }}
-                  className="text-sm text-text-secondary bg-surface border border-border hover:border-accent hover:text-accent px-3 py-1.5 rounded-md transition-colors font-medium"
+                  className="text-sm text-text-secondary bg-surface border border-border hover:border-accent hover:text-accent px-3 py-1.5 rounded-md transition-colors font-medium shrink-0"
                 >
                   {prompt}
                 </button>
@@ -134,7 +132,7 @@ const LandingPage = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-2xl font-display font-bold text-text-primary">Featured Postmortems</h2>
-              <p className="text-text-secondary mt-1">Curated collection of startup failures to learn from</p>
+              <p className="text-text-secondary mt-1">Curated case studies helping founders avoid common mistakes</p>
             </div>
             <Link to="/explore" className="text-sm font-semibold text-accent hover:text-accent-2 flex items-center gap-1">
               View all <ArrowRight className="w-4 h-4" />
@@ -161,8 +159,8 @@ const LandingPage = () => {
       <section className="py-12 px-4 sm:px-6 lg:px-8 border-t border-border bg-surface/30">
         <div className="pv-content-container">
           <div className="mb-8">
-            <h2 className="text-2xl font-display font-bold text-text-primary">Failure Patterns</h2>
-            <p className="text-text-secondary mt-1">Most common reasons startups fail</p>
+            <h2 className="text-2xl font-display font-bold text-text-primary">Common Growth Hurdles</h2>
+            <p className="text-text-secondary mt-1">Key patterns and pivots identified across startup journeys</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -187,9 +185,9 @@ const LandingPage = () => {
         <div className="pv-content-container">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div>
-              <h2 className="text-2xl font-display font-bold text-text-primary">Industry Risk Heatmap</h2>
+              <h2 className="text-2xl font-display font-bold text-text-primary">Sector Viability Risk Map</h2>
               <p className="text-text-secondary mt-2 leading-relaxed">
-                Failure rates aggregated across key sectors.
+                Aggregated data highlighting structural challenges across sectors.
               </p>
               <div className="mt-6">
                 <Link to="/insights" className="inline-flex items-center gap-2 pv-btn-secondary">
@@ -226,14 +224,14 @@ const LandingPage = () => {
         <div className="pv-content-container">
           <div className="pv-card p-8">
             <div className="max-w-3xl">
-              <h2 className="text-2xl font-display font-bold text-text-primary mb-2">Ready to avoid the same mistakes?</h2>
+              <h2 className="text-2xl font-display font-bold text-text-primary mb-2">Ready to stress-test your assumptions?</h2>
               <p className="text-text-secondary mb-6">
-                Test your business model against our database of failures.
+                Assess your business model risk against documented startup case studies.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/scan" className="pv-btn-primary">
                   <ShieldAlert className="w-4 h-4" />
-                  Scan Idea for Risk
+                  Stress-Test Your Idea
                 </Link>
                 <Link to="/explore" className="pv-btn-secondary">
                   Search Archive

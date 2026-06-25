@@ -17,6 +17,7 @@ import FounderPlaybook from './pages/FounderPlaybook';
 import CompareStartups from './pages/CompareStartups';
 import HallOfGhosts from './pages/HallOfGhosts';
 import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
 import PitchDeckAutopsy from './pages/PitchDeckAutopsy.jsx';
@@ -70,6 +71,7 @@ function AppContent() {
             setIsMobileOpen={setIsMobileOpen}
           />
           <div className="pv-app-column">
+            <Header />
             <main className="pv-app-main">
               <Routes>
                 <Route path="/" element={<LandingPage />} />

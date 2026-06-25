@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, AlertTriangle, CheckCircle2, ArrowRight, Loader2, Shuffle, Lightbulb, Sword, ShieldCheck, Target, RefreshCcw } from 'lucide-react';
+import { Zap, AlertTriangle, CheckCircle2, ArrowRight, Loader2, Shuffle, Lightbulb, Sword, ShieldCheck, Target, RefreshCcw, ChevronDown } from 'lucide-react';
 import api from '../lib/api';
 import PremiumRadarChart from '../components/PremiumRadarChart';
 import ConversationPanel from '../components/ui/ConversationPanel';
@@ -217,18 +217,21 @@ const RiskScanner = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase text-text-secondary tracking-widest">Industry</label>
-                    <select
-                      className="pv-field"
-                      value={formData.industry}
-                      onChange={e => setFormData({...formData, industry: e.target.value})}
-                    >
-                      <option value="SaaS">SaaS</option>
-                      <option value="FinTech">FinTech</option>
-                      <option value="EdTech">EdTech</option>
-                      <option value="Fitness">Fitness</option>
-                      <option value="E-commerce">E-commerce</option>
-                      <option value="Healthcare">Healthcare</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        className="pv-field pr-10 appearance-none cursor-pointer hover:border-border-strong hover:bg-surface-3 transition-colors"
+                        value={formData.industry}
+                        onChange={e => setFormData({...formData, industry: e.target.value})}
+                      >
+                        <option value="SaaS">SaaS</option>
+                        <option value="FinTech">FinTech</option>
+                        <option value="EdTech">EdTech</option>
+                        <option value="Fitness">Fitness</option>
+                        <option value="E-commerce">E-commerce</option>
+                        <option value="Healthcare">Healthcare</option>
+                      </select>
+                      <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase text-text-secondary tracking-widest">Team Size</label>

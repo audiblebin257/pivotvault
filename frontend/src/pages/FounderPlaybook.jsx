@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClipboardCheck, Loader2, Sparkles, AlertTriangle, RefreshCcw } from 'lucide-react';
+import { ClipboardCheck, Loader2, Sparkles, AlertTriangle, RefreshCcw, ChevronDown } from 'lucide-react';
 import api from '../lib/api';
 import ConversationPanel from '../components/ui/ConversationPanel';
 
@@ -134,16 +134,19 @@ const FounderPlaybook = () => {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase text-text-secondary tracking-widest">Stage</label>
-                  <select 
-                    value={form.stage}
-                    onChange={(e) => setForm({ ...form, stage: e.target.value })}
-                    className="pv-field"
-                  >
-                    <option value="idea">Idea</option>
-                    <option value="prototype">Prototype</option>
-                    <option value="launch">Launch</option>
-                    <option value="growth">Growth</option>
-                  </select>
+                  <div className="relative">
+                    <select 
+                      value={form.stage}
+                      onChange={(e) => setForm({ ...form, stage: e.target.value })}
+                      className="pv-field pr-10 appearance-none cursor-pointer hover:border-border-strong hover:bg-surface-3 transition-colors"
+                    >
+                      <option value="idea">Idea</option>
+                      <option value="prototype">Prototype</option>
+                      <option value="launch">Launch</option>
+                      <option value="growth">Growth</option>
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                  </div>
                 </div>
 
                 {error && (
