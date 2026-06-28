@@ -11,7 +11,7 @@ const Login = () => {
   const { refresh } = useBookmarks();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from || '/assistant';
+  const from = location.state?.from || '/explore';
 
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -32,6 +32,7 @@ const Login = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-16">
@@ -81,6 +82,8 @@ const Login = () => {
           >
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Sign In <ArrowRight className="w-4 h-4" /></>}
           </button>
+          
+
           <p className="text-center text-sm text-text-secondary">
             No account?{' '}
             <Link to="/signup" state={{ from }} className="text-accent font-semibold hover:underline">Create one</Link>

@@ -6,6 +6,7 @@ const renderMarkdown = (text) => {
   return text.split('\n').map((line, idx) => {
     let content = line;
     content = content.replace(/\*\*(.*?)\*\*/g, '<strong class="text-text-primary">$1</strong>');
+    content = content.replace(/`(.*?)`/g, '<code class="bg-surface-3 border border-border px-1.5 py-0.5 rounded font-mono text-xs text-accent">$1</code>');
     
     if (line.trim().startsWith('* ') || line.trim().startsWith('- ')) {
       return (

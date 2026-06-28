@@ -1,12 +1,10 @@
 import React from 'react';
 import * as d3 from 'd3';
-import axios from 'axios';
 import { Info, ZoomIn, ZoomOut, RotateCcw, Building2, MapPin, Skull, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import Logo from '../components/Logo';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 // Node color definitions
 const getNodeColors = (d) => {
@@ -32,7 +30,7 @@ const KnowledgeGraph = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/graph/edges`);
+        const response = await api.get('/graph/edges');
         setData(response.data);
       } catch (err) {
         console.error(err);

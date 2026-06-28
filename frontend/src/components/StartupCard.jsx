@@ -19,6 +19,20 @@ const StartupCard = ({
   shutdownYear,
   domain
 }) => {
+  const truncateSummary = (text, maxLength = 120) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    
+    let truncated = text.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(' ');
+    if (lastSpace > 0) {
+      truncated = truncated.substring(0, lastSpace);
+    }
+    // Remove trailing punctuation
+    truncated = truncated.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()—\s]+$/, '');
+    return truncated + '...';
+  };
+
   const formatINR = (val) => {
     if (!val) return 'Undisclosed';
     const num = Number(val);
@@ -81,8 +95,8 @@ const StartupCard = ({
           <h3 className="text-xl font-display font-bold mb-1 text-text-primary group-hover:text-accent transition-colors">{name}</h3>
           <p className="text-sm text-text-muted mb-3">{industry}</p>
           
-          <p className="text-sm text-text-secondary line-clamp-3 mb-4 leading-relaxed">
-            {summary}
+          <p className="text-sm text-text-secondary line-clamp-2 mb-4 leading-relaxed">
+            {truncateSummary(summary, 120)}
           </p>
 
           {/* Stats */}

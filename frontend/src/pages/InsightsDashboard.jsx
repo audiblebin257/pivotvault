@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { clsx } from 'clsx';
 import React from 'react';
-import axios from 'axios';
 import CountUp from 'react-countup';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -12,8 +11,7 @@ import {
   Skull, AlertTriangle, ShieldAlert, DollarSign 
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 // Chart color palette
 const chartColors = [
@@ -35,7 +33,7 @@ const InsightsDashboard = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/insights`); 
+        const response = await api.get('/insights'); 
         setData(response.data);
       } catch (err) {
         console.error(err);
@@ -49,9 +47,9 @@ const InsightsDashboard = () => {
   const formatTotalFunding = (val) => {
     if (!val) return 'Undisclosed';
     const num = Number(val);
-    if (num >= 100000000000) return `₹${(num / 100000000000).toFixed(1)} L Cr`;
-    if (num >= 10000000) return `₹${(num / 10000000).toFixed(0)} Cr`;
-    if (num >= 100000) return `₹${(num / 100000).toFixed(0)} L`;
+    if (num >= 1000000000) return `₹${(num / 1000000000).toFixed(1)}B`;
+    if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)}Cr`;
+    if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
     return `₹${num.toLocaleString('en-IN')}`;
   };
 
@@ -191,7 +189,7 @@ const InsightsDashboard = () => {
                   nameKey="industry"
                   cx="50%"
                   cy="50%"
-                  outerRadius={90}
+                  outerRadius="70%"
                   stroke={theme === 'blue' ? '#2A2A2A' : 'var(--color-border)'}
                   strokeWidth={2}
                 >
@@ -214,7 +212,7 @@ const InsightsDashboard = () => {
           </h3>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.topFailureReasonsByIndustry || []} layout="vertical">
+              <BarChart data={data.topFailureReasonsByIndustry || []} layout="vertical" margin={{ left: -15, right: 10, top: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis 
@@ -222,7 +220,7 @@ const InsightsDashboard = () => {
                   type="category" 
                   tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
                   tickFormatter={(val) => val.toUpperCase().replace(/_/g, ' ')}
-                  width={110}
+                  width={90}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -247,7 +245,7 @@ const InsightsDashboard = () => {
           </h3>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.yearlyTrends || []}>
+              <AreaChart data={data.yearlyTrends || []} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={chartColors[0]} stopOpacity={0.3}/>
