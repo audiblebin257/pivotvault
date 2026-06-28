@@ -1,12 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Ghost, MessageSquare, Terminal, Filter, Sparkles, AlertCircle } from 'lucide-react';
-import axios from 'axios';
 import GhostChat from '../components/GhostChat';
 import Logo from '../components/Logo';
 import SearchInput from '../components/ui/SearchInput';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 const HallOfGhosts = () => {
   const [startups, setStartups] = React.useState([]);
@@ -17,7 +15,7 @@ const HallOfGhosts = () => {
   React.useEffect(() => {
     const fetchStartups = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/startups?limit=50`);
+        const response = await api.get('/startups?limit=50');
         setStartups(response.data.data);
       } catch (err) {
         console.error(err);
@@ -95,7 +93,7 @@ const HallOfGhosts = () => {
                 <div className="flex items-center justify-between mt-auto">
                   <div className="flex items-center gap-1.5 text-[10px] font-black text-red uppercase tracking-widest">
                     <AlertCircle className="w-3.5 h-3.5" />
-                    Failed {startup.closedYear}
+                    Failed {startup.shutdownYear}
                   </div>
                   <button className="flex items-center gap-2 text-xs font-bold text-accent group-hover:underline">
                     Initiate Seance

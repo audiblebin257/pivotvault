@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Search, ShieldAlert, Target, Activity, Loader2, Sparkles, AlertTriangle, FileUp, CheckCircle2, Lightbulb, RefreshCcw } from 'lucide-react';
+import { FileText, Search, ShieldAlert, Target, Activity, Loader2, Sparkles, AlertTriangle, FileUp, CheckCircle2, Lightbulb, RefreshCcw, ChevronDown } from 'lucide-react';
 import api from '../lib/api';
 import { clsx } from 'clsx';
 import JSZip from 'jszip';
@@ -147,18 +147,21 @@ const PitchDeckAutopsy = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-text-secondary uppercase tracking-widest">Startup Industry</label>
-                  <select
-                    className="w-full bg-surface-2 border border-border rounded-lg p-4 focus:outline-none focus:border-accent"
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                  >
-                    <option value="SaaS">SaaS</option>
-                    <option value="FinTech">FinTech</option>
-                    <option value="EdTech">EdTech</option>
-                    <option value="E-commerce">E-commerce</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="Web3">Web3/Crypto</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      className="w-full bg-surface-2 border border-border rounded-lg pl-3 pr-10 py-4 focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+                      value={industry}
+                      onChange={(e) => setIndustry(e.target.value)}
+                    >
+                      <option value="SaaS">SaaS</option>
+                      <option value="FinTech">FinTech</option>
+                      <option value="EdTech">EdTech</option>
+                      <option value="E-commerce">E-commerce</option>
+                      <option value="Healthcare">Healthcare</option>
+                      <option value="Web3">Web3/Crypto</option>
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                  </div>
                 </div>
               </div>
 

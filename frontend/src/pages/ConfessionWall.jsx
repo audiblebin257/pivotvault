@@ -1,10 +1,8 @@
 import React from 'react';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Heart, Send, Ghost } from 'lucide-react';
 import { clsx } from 'clsx';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 const ConfessionWall = () => {
   const [confessions, setConfessions] = React.useState([]);
@@ -14,7 +12,7 @@ const ConfessionWall = () => {
 
   const fetchConfessions = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/confessions`);
+      const response = await api.get('/confessions');
       setConfessions(response.data);
     } catch (err) {
       console.error(err);
@@ -33,7 +31,7 @@ const ConfessionWall = () => {
 
     setIsSubmitting(true);
     try {
-      await axios.post(`${API_URL}/api/confessions`, { text });
+      await api.post('/confessions', { text });
       setText('');
       fetchConfessions();
     } catch (err) {
@@ -49,7 +47,7 @@ const ConfessionWall = () => {
       c.id === id ? { ...c, upvotes: c.upvotes + 1 } : c
     ));
     try {
-      await axios.post(`${API_URL}/api/confessions/${id}/upvote`);
+      await api.post(`/confessions/${id}/upvote`);
     } catch (err) {
       console.error(err);
     }

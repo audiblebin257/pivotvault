@@ -6,13 +6,14 @@ const PivotVaultIntro = ({ onComplete }) => {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    // Phase 0: 0-1.5s → Crowd only
-    // Phase 1: 1.5-3.5s → Show branding
-    // Phase 2: 3.5-6s → Keep visible
-    // Phase 3: 6-7s → Fade out
-    const timer1 = setTimeout(() => setPhase(1), 1500);
-    const timer2 = setTimeout(() => setPhase(2), 6000);
-    const timer3 = setTimeout(() => onComplete(), 7000);
+    // Shortened Phase Timing for Snappy Hackathon Feel
+    // Phase 0: 0-0.5s → Crowd only
+    // Phase 1: 0.5-2.0s → Show branding
+    // Phase 2: 2.0-3.0s → Keep visible
+    // Phase 3: 3.0s+ → Complete/Fade out
+    const timer1 = setTimeout(() => setPhase(1), 500);
+    const timer2 = setTimeout(() => setPhase(2), 2000);
+    const timer3 = setTimeout(() => onComplete(), 3000);
 
     return () => {
       clearTimeout(timer1);
@@ -20,6 +21,11 @@ const PivotVaultIntro = ({ onComplete }) => {
       clearTimeout(timer3);
     };
   }, [onComplete]);
+
+  const handleSkip = (e) => {
+    e.stopPropagation();
+    onComplete();
+  };
 
   return (
     <AnimatePresence>
@@ -29,9 +35,19 @@ const PivotVaultIntro = ({ onComplete }) => {
         animate={{ opacity: phase === 3 ? 0 : 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.8, ease: "easeInOut" }}
-        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
+        onClick={onComplete}
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden cursor-pointer"
         style={{ backgroundColor: '#050505' }}
       >
+        {/* Skip Button */}
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="absolute top-6 right-6 z-[10000] bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-full border border-white/20 transition-all cursor-pointer"
+        >
+          Skip Intro
+        </button>
+
         {/* Crowd Animation */}
         <div className="absolute bottom-0 left-0 w-full h-[70vh]" style={{ transform: 'translateY(120px)' }}>
           <CrowdCanvas
@@ -54,7 +70,7 @@ const PivotVaultIntro = ({ onComplete }) => {
             }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white font-display">
               PIVOTVAULT
             </h1>
           </motion.div>

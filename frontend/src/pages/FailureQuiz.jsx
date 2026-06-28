@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, CheckCircle2, XCircle, RefreshCw, ArrowRight, Trophy, Flame, Zap, Sparkles } from 'lucide-react';
+import { Brain, CheckCircle2, XCircle, RefreshCw, ArrowRight, Trophy, Flame, Zap, Sparkles, ChevronDown } from 'lucide-react';
 import api from '../lib/api';
 import { clsx } from 'clsx';
 import { getFounderRank } from '../lib/quizData';
@@ -111,30 +111,36 @@ const FailureQuiz = () => {
           <h2 className="text-xl font-display font-bold mb-2">Generate your quiz</h2>
           <p className="text-text-secondary text-sm mb-6">Choose your difficulty and question count.</p>
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 w-48">
               <label className="text-sm font-bold text-text-secondary uppercase tracking-widest">Difficulty</label>
-              <select
-                className="w-full bg-surface-2 border border-border rounded-lg p-3 focus:outline-none focus:border-accent"
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
-              >
-                <option value="mixed">Mixed</option>
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
+              <div className="relative">
+                <select
+                  className="w-full bg-surface-2 border border-border rounded-lg pl-3 pr-10 py-3 focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                >
+                  <option value="mixed">Mixed</option>
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 w-48">
               <label className="text-sm font-bold text-text-secondary uppercase tracking-widest">Questions</label>
-              <select
-                className="w-full bg-surface-2 border border-border rounded-lg p-3 focus:outline-none focus:border-accent"
-                value={quizCount}
-                onChange={(e) => setQuizCount(parseInt(e.target.value))}
-              >
-                <option value={3}>3</option>
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-              </select>
+              <div className="relative">
+                <select
+                  className="w-full bg-surface-2 border border-border rounded-lg pl-3 pr-10 py-3 focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+                  value={quizCount}
+                  onChange={(e) => setQuizCount(parseInt(e.target.value))}
+                >
+                  <option value={3}>3</option>
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+              </div>
             </div>
             <button
               onClick={loadQuiz}

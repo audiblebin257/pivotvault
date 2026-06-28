@@ -1,15 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GitCompare, ArrowRight } from 'lucide-react';
+import { GitCompare, ArrowRight, ChevronDown } from 'lucide-react';
 import api from '../lib/api';
 import Logo from '../components/Logo';
 
 const formatINR = (val) => {
   if (!val) return 'Undisclosed';
   const num = Number(val);
-  if (num >= 1000000000) return `₹${(num / 1000000000).toFixed(1)} B`;
-  if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)} Cr`;
-  if (num >= 100000) return `₹${(num / 100000).toFixed(1)} L`;
+  if (num >= 1000000000) return `₹${(num / 1000000000).toFixed(1)}B`;
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)}Cr`;
+  if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
   return `₹${num.toLocaleString('en-IN')}`;
 };
 
@@ -60,19 +60,39 @@ const CompareStartups = () => {
 
       {loading ? (
         <div className="h-96 pv-card animate-pulse" />
+      ) : startups.length === 0 ? (
+        <div className="pv-card p-10 text-center max-w-xl mx-auto">
+          <GitCompare className="w-12 h-12 text-accent mx-auto mb-4" />
+          <h2 className="text-xl font-display font-bold mb-2">No failures to compare</h2>
+          <p className="text-text-secondary text-sm mb-6">We couldn't load any startup data. Please check the network status or refresh the page.</p>
+        </div>
       ) : (
         <div className="pv-card overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 border-b border-border">
             <div className="p-5 bg-bg/30 hidden md:block" />
             <div className="p-5 border-b md:border-b-0 md:border-l border-border">
-              <select value={leftSlug} onChange={(e) => setLeftSlug(e.target.value)} className="w-full bg-surface-2 border border-border rounded-lg p-3 focus:outline-none focus:border-accent">
-                {startups.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
-              </select>
+              <div className="relative">
+                <select 
+                  value={leftSlug} 
+                  onChange={(e) => setLeftSlug(e.target.value)} 
+                  className="w-full bg-surface-2 border border-border rounded-lg pl-3 pr-10 py-3 focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+                >
+                  {startups.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+              </div>
             </div>
             <div className="p-5 md:border-l border-border">
-              <select value={rightSlug} onChange={(e) => setRightSlug(e.target.value)} className="w-full bg-surface-2 border border-border rounded-lg p-3 focus:outline-none focus:border-accent">
-                {startups.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
-              </select>
+              <div className="relative">
+                <select 
+                  value={rightSlug} 
+                  onChange={(e) => setRightSlug(e.target.value)} 
+                  className="w-full bg-surface-2 border border-border rounded-lg pl-3 pr-10 py-3 focus:outline-none focus:border-accent text-text-primary appearance-none hover:border-border-strong hover:bg-surface-3 transition-colors cursor-pointer"
+                >
+                  {startups.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+              </div>
             </div>
           </div>
 

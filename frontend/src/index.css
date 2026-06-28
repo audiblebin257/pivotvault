@@ -225,7 +225,7 @@
     @apply flex items-center gap-3 rounded-button px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary;
   }
 
-  .pv-nav-item-active { @apply bg-accent/10 text-accent; }
+  .pv-nav-item-active { @apply bg-accent/15 text-text-primary; }
   .pv-eyebrow { @apply text-label uppercase text-text-muted; }
 }
 
@@ -253,14 +253,20 @@
   background-size: 4rem 4rem;
 }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: rgb(var(--color-bg)); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--color-surface-3));
-  border: 2px solid rgb(var(--color-bg));
+  background: rgb(var(--color-border));
   border-radius: var(--radius-full);
 }
-::-webkit-scrollbar-thumb:hover { background: rgb(var(--color-accent)); }
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-accent) / 0.8);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

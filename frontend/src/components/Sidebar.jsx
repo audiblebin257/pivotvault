@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Skull, Search, Zap, BarChart2, MessageSquare, Share2, Menu, X, Sparkles,
   Bookmark, Brain, GitCompare, ClipboardCheck, Sun, Moon, LogOut, User,
-  FileText, PanelLeftClose, PanelLeft, Ghost
+  FileText, PanelLeftClose, PanelLeft, Ghost, DollarSign
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTheme } from '../context/ThemeContext';
@@ -20,10 +20,16 @@ const SidebarItem = ({ item, isCollapsed, onClick }) => {
       title={isCollapsed ? item.name : undefined}
       className={({ isActive }) => clsx(
         "pv-nav-item relative group mb-1",
-        isCollapsed ? "justify-center h-12 w-12 mx-auto" : "px-3 py-2.5 gap-3 mx-2",
-        isActive 
-          ? "pv-nav-item-active font-bold"
-          : ""
+        isCollapsed 
+          ? clsx(
+              "justify-center h-12 w-12 mx-auto",
+              isActive ? "bg-accent/20 text-accent font-bold" : ""
+            ) 
+          : clsx(
+              "py-2 gap-3 mx-2",
+              isActive ? "border-l-[4px] border-accent bg-accent/15 text-text-primary font-bold pl-[8px] pr-3" : "px-3"
+            ),
+        isActive ? "pv-nav-item-active" : ""
       )}
     >
       {({ isActive }) => (
@@ -84,6 +90,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
     { name: 'AI Assistant', path: '/assistant', icon: Sparkles },
     { name: 'Risk Scanner', path: '/scan', icon: Zap },
     { name: 'Founder Playbook', path: '/playbook', icon: ClipboardCheck },
+    { name: 'Bookmarks', path: '/bookmarks', icon: Bookmark },
+    { name: 'Pricing', path: '/pricing', icon: DollarSign },
   ];
 
   const analysisNav = [
@@ -103,7 +111,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
     <div className="flex flex-col h-full">
       {/* Header with Logo & Toggle */}
       <div className={clsx(
-        "flex items-center shrink-0 h-20 border-b border-border/40 mb-6",
+        "flex items-center shrink-0 h-20 border-b border-border/40 mb-4",
         collapsed ? "justify-center" : "px-4 justify-between"
       )}>
         {!collapsed && (
@@ -139,70 +147,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
         <NavSection title="Core" items={coreNav} isCollapsed={collapsed} onItemClick={() => setIsMobileOpen(false)} />
         <NavSection title="Analysis" items={analysisNav} isCollapsed={collapsed} onItemClick={() => setIsMobileOpen(false)} />
         <NavSection title="Learn" items={learnNav} isCollapsed={collapsed} onItemClick={() => setIsMobileOpen(false)} />
-        
-        {/* Utilities */}
-        <div className="mt-4 pt-4 border-t border-border/40">
-          {!collapsed && <div className="px-4 mb-3 text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">System</div>}
-          
-          <SidebarItem item={{ name: 'Bookmarks', path: '/bookmarks', icon: Bookmark }} isCollapsed={collapsed} onClick={() => setIsMobileOpen(false)} />
-          
-          <button
-            onClick={toggleTheme}
-            className={clsx(
-              "pv-nav-item w-full relative group mb-1",
-              collapsed ? "justify-center h-12 w-12 mx-auto" : "px-3 py-2.5 gap-3 mx-2"
-            )}
-          >
-            {theme === 'blue' ? <Sun className="w-5 h-5 shrink-0" /> : <Moon className="w-5 h-5 shrink-0" />}
-            {!collapsed && <span className="text-sm tracking-tight whitespace-nowrap">{theme === 'blue' ? 'Light Mode' : 'Dark Mode'}</span>}
-          </button>
-
-          <SidebarItem item={{ name: 'Profile', path: '/history', icon: User }} isCollapsed={collapsed} onClick={() => setIsMobileOpen(false)} />
-          
-          {isAuthed && (
-            <button
-              onClick={() => { logout(); setIsMobileOpen(false); }}
-              className={clsx(
-                "pv-nav-item w-full relative hover:text-danger hover:bg-danger/5 group mb-1",
-                collapsed ? "justify-center h-12 w-12 mx-auto" : "px-3 py-2.5 gap-3 mx-2"
-              )}
-            >
-              <LogOut className="w-5 h-5 shrink-0" />
-              {!collapsed && <span className="text-sm tracking-tight whitespace-nowrap">Sign Out</span>}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Footer / User Profile */}
-      <div className={clsx(
-        "mt-auto p-4 border-t border-border/40 transition-all",
-        collapsed ? "items-center" : "bg-surface-2/30"
-      )}>
-        {isAuthed ? (
-          <div className={clsx("flex items-center gap-3 min-w-0", collapsed ? "justify-center" : "px-2")}>
-            <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center border border-accent/20 shrink-0">
-              <User className="w-5 h-5 text-accent" />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-text-primary truncate">{user?.name}</div>
-                <div className="text-[10px] text-text-muted truncate uppercase font-bold tracking-tighter">Founder</div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Link 
-            to="/login" 
-            onClick={() => setIsMobileOpen(false)}
-            className={clsx(
-              "flex items-center justify-center bg-accent hover:bg-accent-2 text-accent-contrast transition-all shadow-sm",
-              collapsed ? "w-10 h-10 rounded-full" : "w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest"
-            )}
-          >
-            {collapsed ? <LogOut className="w-4 h-4 rotate-180" /> : "Access Vault"}
-          </Link>
-        )}
       </div>
     </div>
   );
@@ -265,9 +209,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
 };
 
 const NavSection = ({ title, items, isCollapsed, onItemClick }) => (
-  <div className="mb-4">
+  <div className="mb-3">
     {!isCollapsed && (
-      <div className="px-4 mb-2 text-[10px] font-black text-text-muted uppercase tracking-[0.2em] opacity-60">
+      <div className="px-4 mb-2 text-xs font-black text-text-muted uppercase tracking-[0.15em] opacity-80">
         {title}
       </div>
     )}
