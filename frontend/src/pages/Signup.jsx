@@ -88,7 +88,7 @@ const Signup = () => {
             />
           </div>
           <button type="submit" disabled={loading}
-            className="w-full bg-accent hover:opacity-90 disabled:opacity-50 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md">
+            className="w-full pv-btn-primary">
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
           </button>
           <p className="text-center text-sm text-text-secondary">

@@ -30,6 +30,52 @@
   --card-shadow: var(--shadow-card);
   --card-hover-shadow: 0 12px 36px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(201, 145, 52, 0.08);
   color-scheme: dark;
+
+  /* Cursor (dark mode) colors */
+  --color-cursor-primary: 245 78 0;
+  --color-cursor-primary-active: 208 66 0;
+  --color-cursor-ink: 245 245 240;
+  --color-cursor-body: 180 178 170;
+  --color-cursor-body-strong: 245 245 240;
+  --color-cursor-muted: 128 125 114;
+  --color-cursor-muted-soft: 160 156 146;
+  --color-cursor-hairline: 50 50 55;
+  --color-cursor-hairline-soft: 40 40 45;
+  --color-cursor-hairline-strong: 70 70 75;
+  --color-cursor-canvas: 18 18 20;
+  --color-cursor-canvas-soft: 22 22 24;
+  --color-cursor-surface-card: 30 30 35;
+  --color-cursor-surface-strong: 40 40 45;
+  --color-cursor-on-primary: 255 255 255;
+  --color-cursor-timeline-thinking: 223 168 143;
+  --color-cursor-timeline-grep: 159 201 162;
+  --color-cursor-timeline-read: 159 187 224;
+  --color-cursor-timeline-edit: 192 168 221;
+  --color-cursor-timeline-done: 192 133 50;
+  --color-cursor-error: 207 45 86;
+  --color-cursor-success: 31 138 101;
+
+  /* Apple variables fallback in dark mode */
+  --color-apple-primary: 41 151 255;
+  --color-apple-primary-focus: 0 113 227;
+  --color-apple-primary-dark: 41 151 255;
+  --color-apple-ink: 255 255 255;
+  --color-apple-body: 255 255 255;
+  --color-apple-body-dark: 255 255 255;
+  --color-apple-body-muted: 204 204 204;
+  --color-apple-ink-muted-80: 220 220 220;
+  --color-apple-ink-muted-48: 140 140 140;
+  --color-apple-divider-soft: 40 40 45;
+  --color-apple-hairline: 50 50 55;
+  --color-apple-canvas: 18 18 20;
+  --color-apple-canvas-parchment: 22 22 24;
+  --color-apple-surface-pearl: 26 26 30;
+  --color-apple-surface-tile-1: 39 39 41;
+  --color-apple-surface-tile-2: 42 42 44;
+  --color-apple-surface-tile-3: 37 37 39;
+  --color-apple-surface-black: 0 0 0;
+  --color-apple-surface-chip-translucent: 50 50 55;
+  --color-apple-on-primary: 255 255 255;
 }
 
 [data-theme='beige'] {
@@ -58,6 +104,52 @@
   --card-shadow: var(--shadow-card);
   --card-hover-shadow: 0 12px 32px rgba(91, 67, 34, 0.13), 0 0 0 1px rgba(151, 96, 26, 0.08);
   color-scheme: light;
+
+  /* Apple (light mode) colors */
+  --color-apple-primary: 0 102 204;
+  --color-apple-primary-focus: 0 113 227;
+  --color-apple-primary-dark: 0 68 136;
+  --color-apple-ink: 29 29 31;
+  --color-apple-body: 29 29 31;
+  --color-apple-body-dark: 29 29 31;
+  --color-apple-body-muted: 122 122 122;
+  --color-apple-ink-muted-80: 51 51 51;
+  --color-apple-ink-muted-48: 122 122 122;
+  --color-apple-divider-soft: 240 240 240;
+  --color-apple-hairline: 224 224 224;
+  --color-apple-canvas: 255 255 255;
+  --color-apple-canvas-parchment: 245 245 247;
+  --color-apple-surface-pearl: 250 250 252;
+  --color-apple-surface-tile-1: 240 240 242;
+  --color-apple-surface-tile-2: 235 235 237;
+  --color-apple-surface-tile-3: 245 245 247;
+  --color-apple-surface-black: 0 0 0;
+  --color-apple-surface-chip-translucent: 210 210 215;
+  --color-apple-on-primary: 255 255 255;
+
+  /* Cursor variables fallback in light mode */
+  --color-cursor-primary: 245 78 0;
+  --color-cursor-primary-active: 208 66 0;
+  --color-cursor-ink: 29 29 31;
+  --color-cursor-body: 50 50 55;
+  --color-cursor-body-strong: 18 18 20;
+  --color-cursor-muted: 128 125 114;
+  --color-cursor-muted-soft: 140 135 125;
+  --color-cursor-hairline: 215 207 193;
+  --color-cursor-hairline-soft: 225 217 203;
+  --color-cursor-hairline-strong: 185 174 155;
+  --color-cursor-canvas: 255 255 255;
+  --color-cursor-canvas-soft: 245 245 247;
+  --color-cursor-surface-card: 255 253 248;
+  --color-cursor-surface-strong: 239 234 224;
+  --color-cursor-on-primary: 255 255 255;
+  --color-cursor-timeline-thinking: 151 96 26;
+  --color-cursor-timeline-grep: 25 128 82;
+  --color-cursor-timeline-read: 41 98 166;
+  --color-cursor-timeline-edit: 112 66 181;
+  --color-cursor-timeline-done: 151 96 26;
+  --color-cursor-error: 184 55 48;
+  --color-cursor-success: 25 128 82;
 }
 
 :root {
@@ -144,12 +236,6 @@
   .pv-app-main {
     @apply flex min-w-0 flex-1 flex-col;
     width: 100%;
-    padding-top: var(--mobile-header-height);
-  }
-
-  .pv-mobile-header {
-    @apply fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-border bg-bg/95 px-4 backdrop-blur-xl;
-    height: var(--mobile-header-height);
   }
 
   .pv-desktop-sidebar {
@@ -172,8 +258,6 @@
     .pv-app-shell[data-sidebar='expanded'] {
       grid-template-columns: var(--sidebar-expanded) minmax(0, 1fr);
     }
-
-    .pv-app-main { padding-top: 0; }
   }
 
   .pv-card {
@@ -189,25 +273,25 @@
   }
 
   .pv-btn {
-    @apply inline-flex h-control items-center justify-center gap-2 whitespace-nowrap rounded-button px-4 text-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform] duration-150 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex h-control items-center justify-center gap-2 whitespace-nowrap rounded-button px-4 text-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none;
   }
 
   .pv-btn:active:not(:disabled) { transform: translateY(1px); }
 
   .pv-btn-primary {
-    @apply pv-btn border border-accent bg-accent text-accent-contrast shadow-sm hover:border-accent-2 hover:bg-accent-2;
+    @apply pv-btn border border-accent bg-accent text-accent-contrast shadow-sm hover:border-accent-2 hover:bg-accent-2 disabled:hover:border-accent disabled:hover:bg-accent;
   }
 
   .pv-btn-secondary {
-    @apply pv-btn border border-border bg-surface-2 text-text-primary shadow-xs hover:border-border-strong hover:bg-surface-3;
+    @apply pv-btn border border-border bg-surface-2 text-text-primary shadow-xs hover:border-border-strong hover:bg-surface-3 disabled:hover:border-border disabled:hover:bg-surface-2;
   }
 
   .pv-btn-ghost {
-    @apply pv-btn border border-transparent bg-transparent text-text-secondary hover:bg-surface-2 hover:text-text-primary;
+    @apply pv-btn border border-transparent bg-transparent text-text-secondary hover:bg-surface-2 hover:text-text-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary;
   }
 
   .pv-btn-danger {
-    @apply pv-btn border border-danger/30 bg-danger/10 text-danger hover:border-danger/50 hover:bg-danger/15;
+    @apply pv-btn border border-danger/30 bg-danger/10 text-danger hover:border-danger/50 hover:bg-danger/15 disabled:hover:border-danger/30 disabled:hover:bg-danger/10;
   }
 
   .pv-btn-icon { @apply pv-btn h-control w-control px-0; }

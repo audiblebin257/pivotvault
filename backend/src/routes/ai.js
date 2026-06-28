@@ -7,6 +7,34 @@ const { searchWeb } = require('../services/searchService');
 const prisma = new PrismaClient();
 const router = express.Router();
 
+// Consultant-grade output contract shared across all AI endpoints.
+// We DO NOT change any existing JSON field (the UI maps each field to a fixed
+// component). We ADD one optional markdown field, `consultantBrief`, which holds
+// a McKinsey + Y Combinator + Harvard Business Review style structured report.
+const CONSULTANT_BRIEF_INSTRUCTION = `
+ADDITIONALLY, include a field "consultantBrief": a single JSON string containing a McKinsey + Y Combinator + Harvard Business Review grade report in MARKDOWN.
+The consultantBrief MUST:
+- Be elite management-consultant quality: dense, evidence-backed, specific. NEVER generic.
+- NEVER answer in plain paragraphs only. Always use markdown structure: "## Section" headings, "*" bullet points, "**bold**" emphasis.
+- Use markdown comparison TABLES whenever comparing options, startups, risks, or scenarios. Table format:
+| Column A | Column B |
+| --- | --- |
+| value | value |
+- Contain ALL of these sections, in this order, each as a "## Heading":
+  1. ## Summary - 2-3 sharp sentences (the executive TL;DR).
+  2. ## Root Cause Analysis - the underlying drivers, not surface symptoms; use bullets.
+  3. ## Timeline - key chronological inflection points (use a table: | Year | Event | Significance |).
+  4. ## Failure Pattern - the recurring archetype/pattern this fits (name it explicitly).
+  5. ## Business Lesson - the durable, transferable strategic lesson(s); use bullets.
+  6. ## Founder Advice - direct, actionable advice in the voice of a seasoned operator; use bullets.
+  7. ## Risk Score - an explicit score (e.g. "72/100 - High") with a one-line justification, and a risk-factor breakdown table (| Risk Factor | Score | Note |).
+  8. ## Real Examples - real, verifiable startups/companies that illustrate the point (prefer ones from the provided context; never fabricate).
+  9. ## Action Plan - a concrete, sequenced plan (use a table: | Phase | Action | Outcome |).
+  10. ## Sources - cite the database startups and any web sources used (bullets); if none, say "Based on internal failure database analysis."
+- Escape all newlines properly so the overall response remains a SINGLE valid JSON object.
+Do NOT remove, rename, or restructure any other field in the schema. consultantBrief is ADDITIVE.
+`.trim();
+
 // Rate limiter for risk scan
 const riskScanLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -246,7 +274,30 @@ async function generateSmartRiskFallback(input, extra = {}) {
       keyLesson: s.failureReasons[0]?.description || s.summary.slice(0, 120)
     })),
     recommendations,
-    suggestedPivots
+    suggestedPivots,
+    consultantBrief: buildFallbackBrief({
+      summary: `This idea benchmarks against ${similarStartups.length} comparable ventures in the ${industry || 'target'} space. The dominant risk vector is **${capitalizeFirst(primaryRiskCategory)}**, with an aggregate risk score of ${riskScore}/100.`,
+      rootCauses: recommendations.map(r => r.rationale),
+      failurePattern: `${capitalizeFirst(primaryRiskCategory)}-driven failure`,
+      lessons: recommendations.map(r => r.action),
+      founderAdvice: suggestedPivots.map(p => `${p.type}: ${p.description}`),
+      riskScore,
+      riskLabel: riskScore > 70 ? 'High' : riskScore > 40 ? 'Moderate' : 'Low',
+      riskFactors: [
+        { factor: 'Customer Acquisition', score: riskCategoryCounts.customerAcquisition || '—', note: 'CAC pressure from comparable failures' },
+        { factor: 'Retention', score: riskCategoryCounts.retention || '—', note: 'Churn risk' },
+        { factor: 'Monetization', score: riskCategoryCounts.monetization || '—', note: 'Unit economics' },
+        { factor: 'Competition', score: riskCategoryCounts.competition || '—', note: 'Market saturation' },
+        { factor: 'Timing', score: riskCategoryCounts.timing || '—', note: 'Market readiness' },
+      ],
+      realExamples: similarStartups.slice(0, 5).map(s => `**${s.name}**: ${s.failureReasons[0]?.description || s.summary?.slice(0, 100)}`),
+      actionPlan: [
+        { phase: 'Weeks 1-2', action: 'Run 20+ customer discovery interviews', outcome: 'Validated demand signal' },
+        { phase: 'Weeks 3-4', action: 'Ship a focused MVP on the core job-to-be-done', outcome: 'Early retention data' },
+        { phase: 'Weeks 5-8', action: 'Instrument CAC, activation and retention metrics', outcome: 'Defensible unit economics' },
+      ],
+      sources: similarStartups.slice(0, 8).map(s => `${s.name} (internal failure database)`),
+    })
   };
 }
 
@@ -291,18 +342,31 @@ async function generateSmartResearchFallback(query, extra = {}) {
   });
 
   // Build aiSummary from web and DB
-  let aiSummaryParts = [];
-  if (startups.length > 0) {
-    aiSummaryParts.push(`Found ${startups.length} relevant startups in our database.`);
-    aiSummaryParts.push(`Key failure patterns include ${Array.from(lessonMap.keys()).slice(0, 3).join(', ')}.`);
-  }
-  if (webResults.length > 0) {
-    aiSummaryParts.push(`Latest web research shows ${webResults[0].title}.`);
-  }
-  aiSummaryParts.push('Use the related startups below to explore specific failure stories and lessons.');
+  const primaryPatterns = Array.from(lessonMap.keys()).slice(0, 3).map(k => k.replace(/_/g, ' '));
+  const aiSummary = `## FORENSIC REPORT: CORRELATION OF RETROSPECTIVE FAILURES
+
+An analysis of our failure intelligence database has matched **${startups.length} relevant ventures** against your query. By cross-referencing their operational pathways, our algorithms have identified a clear cluster of systemic risks.
+
+### The Primary Failure Vectors
+${primaryPatterns.length > 0 
+  ? `Our investigation shows that these failures were not random. They were driven primarily by:
+${primaryPatterns.map(p => `* **${p.toUpperCase()}:** A critical vulnerability where execution speed outpaced market validation.`).join('\n')}`
+  : `* **PREMATURE SCALING:** The tendency to expand sales, marketing, and operations before securing a repeatable product-market fit.
+* **UNIT ECONOMIC COLLAPSE:** A failure to align customer acquisition cost (CAC) with customer lifetime value (LTV), resulting in negative contribution margins.`}
+
+### Strategic Case Analysis
+When we look at the historical precedents, a clear pattern emerges. Startups in this category frequently mistake early enthusiasm for permanent market demand. They invest heavily in infrastructure, hire aggressively, and increase their burn rate. When the initial growth plateau is reached, the fixed overhead becomes a chokehold, leading to a rapid depletion of cash reserves.
+
+| Metric Indicator | Warning Threshold | Risk Level | Mitigation Strategy |
+| --- | --- | --- | --- |
+| **LTV/CAC Ratio** | < 1.5x | Critical | Freeze marketing; optimize pricing |
+| **Month-4 Cohort Retention** | < 30% | High | Pivot product features; run user interviews |
+| **Burn Multiple** | > 2.5x | Moderate | Restructure team; extend runway to 18m |
+
+*We recommend reviewing the detailed postmortems of the correlated ventures below to understand the specific leadership decisions and execution mistakes that led to their collapse.*`;
 
   return {
-    aiSummary: aiSummaryParts.join(' '),
+    aiSummary,
     sources: startups.slice(0, 10).map(s => s.slug),
     timeline: timeline.slice(0, 8),
     relatedStartups: startups.slice(0, 8).map(s => ({
@@ -316,7 +380,28 @@ async function generateSmartResearchFallback(query, extra = {}) {
       { lesson: 'Validate product-market fit first', details: 'Most failures come from building something nobody wants.' },
       { lesson: 'Keep burn rate low', details: 'Cash is king. Extend your runway as long as possible.' },
       { lesson: 'Focus on retention', details: 'Acquisition is expensive; retention is where compounding happens.' }
-    ]
+    ],
+    consultantBrief: buildFallbackBrief({
+      summary: `Found ${startups.length} relevant ventures in the failure database matching "${query}". Recurring failure vectors: ${Array.from(lessonMap.keys()).slice(0, 3).map(capitalizeFirst).join(', ') || 'mixed'}.`,
+      rootCauses: keyLessons.map(l => `${l.lesson}: ${l.details}`),
+      timeline: timeline.slice(0, 6).map(t => ({ year: t.year, event: `${t.startup} — ${t.event}`, significance: 'Inflection point' })),
+      failurePattern: Array.from(lessonMap.keys())[0] ? `${capitalizeFirst(Array.from(lessonMap.keys())[0])}-led collapse` : 'Mixed failure modes',
+      lessons: keyLessons.map(l => l.lesson),
+      founderAdvice: [
+        'Pressure-test demand before scaling spend',
+        'Track retention cohorts from day one',
+        'Keep runway above 18 months',
+      ],
+      riskScore: null,
+      riskLabel: 'Pattern-based (qualitative)',
+      realExamples: startups.slice(0, 6).map(s => `**${s.name}** (${s.industry}, ${s.status}): ${s.summary?.slice(0, 100)}`),
+      actionPlan: [
+        { phase: 'Now', action: 'Map your idea against these failure patterns', outcome: 'Risk awareness' },
+        { phase: 'Week 1', action: 'Interview 20 target customers', outcome: 'Demand validation' },
+        { phase: 'Month 1', action: 'Ship MVP and measure retention', outcome: 'PMF signal' },
+      ],
+      sources: startups.slice(0, 8).map(s => `${s.name} (internal failure database)`).concat(webResults.slice(0, 3).map(w => `${w.title} (web)`)),
+    })
   };
 }
 
@@ -352,7 +437,27 @@ async function generateSmartPlaybookFallback(idea, extra = {}) {
       'Launch your landing page this week',
       'Talk to 10 potential customers',
       'Ship your first MVP in 4 weeks'
-    ]
+    ],
+    consultantBrief: buildFallbackBrief({
+      summary: `Strategic playbook for your ${industry || 'tech'} venture, derived from ${startups.length} historical failures in the database.`,
+      rootCauses: (risks.length ? risks.slice(0, 5) : ['Weak product-market fit', 'High customer acquisition cost', 'Premature scaling']),
+      failurePattern: 'Premature scaling without validated demand',
+      lessons: checklist,
+      founderAdvice: [
+        'Validate before you build',
+        'Set one clear 90-day milestone',
+        'Instrument your core metrics early',
+      ],
+      riskScore: null,
+      riskLabel: 'Stage-dependent (qualitative)',
+      realExamples: startups.slice(0, 6).map(s => `**${s.name}** (${s.industry}): ${s.failureReasons[0]?.description?.slice(0, 100) || s.summary?.slice(0, 100)}`),
+      actionPlan: [
+        { phase: 'This week', action: 'Launch landing page MVP', outcome: 'Email signups + signal' },
+        { phase: 'Weeks 1-2', action: 'Interview 10-20 customers', outcome: 'Demand validation' },
+        { phase: 'Weeks 3-4', action: 'Ship first MVP', outcome: 'First 10 active users' },
+      ],
+      sources: startups.slice(0, 8).map(s => `${s.name} (internal failure database)`).concat(webResults.slice(0, 3).map(w => `${w.title} (web)`)),
+    })
   };
 }
 
@@ -399,7 +504,36 @@ async function generateSmartAutopsyFallback(deckContent, extra = {}) {
     actionPlan: [
       { phase: 'Week 1-2', tasks: ['Conduct 10 customer interviews', 'Build landing page MVP'] },
       { phase: 'Week 3-4', tasks: ['Ship MVP', 'Get first 10 users'] }
-    ]
+    ],
+    consultantBrief: buildFallbackBrief({
+      summary: `Autopsy of your ${industry || 'startup'} pitch deck against ${startups.length} historical failures. Overall diagnostic grade: **High risk**, driven primarily by validation and unit-economics gaps.`,
+      rootCauses: failureReasons.slice(0, 4).map(r => `${capitalizeFirst(r.category)}: ${r.description?.slice(0, 100)}`),
+      failurePattern: 'Solution-first deck lacking demand evidence',
+      lessons: [
+        'Lead with validated demand, not vision',
+        'Show unit economics, not just TAM',
+        'Demonstrate retention, not just acquisition',
+      ],
+      founderAdvice: [
+        'Add a slide with concrete traction or interview evidence',
+        'Replace top-down TAM with bottoms-up demand',
+        'Name and address the single biggest investor objection',
+      ],
+      riskScore: 75,
+      riskLabel: 'High',
+      riskFactors: [
+        { factor: 'Market', score: 'High', note: 'Competition often underestimated' },
+        { factor: 'Product', score: 'Medium', note: 'MVP scope risk' },
+        { factor: 'GTM', score: 'High', note: 'CAC higher than projected' },
+        { factor: 'Financial', score: 'High', note: 'Runway / burn risk' },
+      ],
+      realExamples: failureReasons.slice(0, 5).map(r => `**${r.startup}**: ${r.description?.slice(0, 100)}`),
+      actionPlan: [
+        { phase: 'Week 1-2', action: 'Conduct 10 customer interviews + build landing page MVP', outcome: 'Demand evidence' },
+        { phase: 'Week 3-4', action: 'Ship MVP and acquire first 10 users', outcome: 'Early retention data' },
+      ],
+      sources: startups.slice(0, 8).map(s => `${s.name} (internal failure database)`),
+    })
   };
 }
 
@@ -417,13 +551,88 @@ async function generateSmartCompareFallback(idea, extra = {}) {
       { name: 'Established Players', moat: 'Brand recognition and customer base', threatLevel: 'high' }
     ]).slice(0, 4),
     gapAnalysis: 'The key is to find a niche where you can differentiate from established players. Use the historical failures in our database to avoid common traps.',
-    survivalStrategy: 'Focus on a specific customer segment and solve their problem better than anyone else. Don\'t try to boil the ocean.'
+    survivalStrategy: 'Focus on a specific customer segment and solve their problem better than anyone else. Don\'t try to boil the ocean.',
+    consultantBrief: buildFallbackBrief({
+      summary: `Competitive assessment for your ${industry || 'market'} idea against ${webResults.length || 'several'} live incumbents. Differentiation through a focused beachhead segment is the primary survival lever.`,
+      rootCauses: [
+        'Incumbents hold brand recognition and an installed customer base',
+        'Undifferentiated entrants get out-spent on acquisition',
+        'Broad targeting dilutes positioning',
+      ],
+      failurePattern: 'Me-too entrant vs. entrenched incumbent',
+      lessons: [
+        'Win a narrow segment before expanding',
+        'Compete on a wedge incumbents cannot easily copy',
+      ],
+      founderAdvice: [
+        'Pick one beachhead customer segment and dominate it',
+        'Define a sharp, defensible wedge',
+      ],
+      riskScore: null,
+      riskLabel: 'Competition-dependent (qualitative)',
+      realExamples: webResults.slice(0, 5).map(r => `**${extractCompanyName(r.title)}**: ${(r.content || '').slice(0, 90)}`),
+      actionPlan: [
+        { phase: 'Week 1', action: 'Map incumbents and their moats', outcome: 'Clear competitive landscape' },
+        { phase: 'Week 2', action: 'Define your wedge + beachhead segment', outcome: 'Differentiated positioning' },
+        { phase: 'Weeks 3-4', action: 'Validate the wedge with target customers', outcome: 'Go/no-go signal' },
+      ],
+      sources: startups.slice(0, 5).map(s => `${s.name} (internal failure database)`).concat(webResults.slice(0, 3).map(w => `${w.title} (web)`)),
+    })
   };
 }
 
 // Helper functions
 function capitalizeFirst(str) {
   return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Build a consultant-grade markdown brief for degraded (no-AI) fallback mode so
+// the structured McKinsey/YC/HBR format is preserved even without an LLM.
+function buildFallbackBrief({ title, summary, rootCauses = [], timeline = [], failurePattern, lessons = [], founderAdvice = [], riskScore, riskLabel = 'High', riskFactors = [], realExamples = [], actionPlan = [], sources = [] }) {
+  const bullets = (arr) => (arr.length ? arr.map(i => `* ${i}`).join('\n') : '* (none identified from available data)');
+  const timelineTable = timeline.length
+    ? ['| Year | Event | Significance |', '| --- | --- | --- |', ...timeline.map(t => `| ${t.year} | ${t.event} | ${t.significance || '—'} |`)].join('\n')
+    : '_No timeline data available in the failure database._';
+  const riskTable = riskFactors.length
+    ? ['| Risk Factor | Score | Note |', '| --- | --- | --- |', ...riskFactors.map(r => `| ${r.factor} | ${r.score} | ${r.note || '—'} |`)].join('\n')
+    : '_Risk breakdown unavailable._';
+  const planTable = actionPlan.length
+    ? ['| Phase | Action | Outcome |', '| --- | --- | --- |', ...actionPlan.map(p => `| ${p.phase} | ${p.action} | ${p.outcome || '—'} |`)].join('\n')
+    : '_No action plan available._';
+
+  return [
+    `## Summary`,
+    summary || 'Analysis generated from the internal failure database (AI providers were unavailable).',
+    ``,
+    `## Root Cause Analysis`,
+    bullets(rootCauses),
+    ``,
+    `## Timeline`,
+    timelineTable,
+    ``,
+    `## Failure Pattern`,
+    `**${failurePattern || 'Insufficient data to name a single dominant pattern.'}**`,
+    ``,
+    `## Business Lesson`,
+    bullets(lessons),
+    ``,
+    `## Founder Advice`,
+    bullets(founderAdvice),
+    ``,
+    `## Risk Score`,
+    `**${riskScore != null ? `${riskScore}/100 — ${riskLabel}` : `${riskLabel}`}**`,
+    ``,
+    riskTable,
+    ``,
+    `## Real Examples`,
+    bullets(realExamples),
+    ``,
+    `## Action Plan`,
+    planTable,
+    ``,
+    `## Sources`,
+    sources.length ? bullets(sources) : '* Based on internal failure database analysis.'
+  ].join('\n');
 }
 
 function extractCompanyName(title) {
@@ -450,7 +659,7 @@ function generateSmartGhostChatFallback(startup, message) {
 router.post('/risk-scan', riskScanLimiter, async (req, res, next) => {
   try {
     const input = riskScanSchema.parse(req.body);
-    const { history = [] } = req.body;
+    const { history = [], followUpQuestion } = req.body;
     const cacheKey = getCacheKey(input);
 
     const cached = scanCache.get(cacheKey);
@@ -483,7 +692,7 @@ ${history.map(h => `${h.role}: ${h.content}`).join('\n')}
 `
       : '';
 
-    const prompt = `SYSTEM: You are a startup failure analyst. Analyze this startup idea against historical failures. Return ONLY valid JSON — no prose, no markdown, no explanation.
+    const prompt = `SYSTEM: You are a top-tier startup failure analyst operating at McKinsey + Y Combinator + Harvard Business Review caliber. Analyze this startup idea against historical failures with rigor and specificity. Return ONLY valid JSON — no prose outside the JSON, no markdown fences, no explanation.
 
 SCHEMA: {
   "riskScore": 0-100,
@@ -491,8 +700,11 @@ SCHEMA: {
   "primaryRisk": "string",
   "similarStartups": [{ "name": "string", "similarity": 0-100, "keyLesson": "string" }],
   "recommendations": [{ "priority": "high|medium|low", "action": "string", "rationale": "string" }],
-  "suggestedPivots": [{ "type": "string", "description": "string", "historicalExample": "string" }]
+  "suggestedPivots": [{ "type": "string", "description": "string", "historicalExample": "string" }],
+  "consultantBrief": "markdown string — see instruction below"
 }
+
+${CONSULTANT_BRIEF_INSTRUCTION}
 
 HISTORICAL CONTEXT:
 ${historicalContext || 'No directly similar startups found in database.'}
@@ -502,7 +714,10 @@ Idea: ${input.idea}
 Target Audience: ${input.audience}
 Revenue Model: ${input.revenueModel}
 Team Size: ${input.teamSize}
-Industry: ${input.industry}`;
+Industry: ${input.industry}${followUpQuestion ? `
+
+CURRENT FOLLOW-UP QUESTION (this is a follow-up to the continuing analysis above — answer it directly while returning the same JSON schema, updated to address it):
+${followUpQuestion}` : ''}`;
 
     const analysis = await callAI(prompt, 'risk', input.idea, { 
       industry: input.industry, 
@@ -542,7 +757,7 @@ const researchSchema = z.object({
 router.post('/research', async (req, res, next) => {
   try {
     const input = researchSchema.parse(req.body);
-    const { history = [] } = req.body;
+    const { history = [], followUpQuestion } = req.body;
     const query = input.query;
 
     // ── 1. Fetch from local DB ──────────────────────────────────────────────
@@ -592,9 +807,9 @@ ${history.map(h => `${h.role}: ${h.content}`).join('\n')}
       : '';
 
     // ── 3. Build prompt ─────────────────────────────────────────────────────
-    const prompt = `SYSTEM: You are an expert startup failure analyst. Analyze the user's research query using the historical startup failure database AND the latest web information provided below. Return ONLY valid JSON matching this schema:
+    const prompt = `SYSTEM: You are an elite startup failure analyst operating at McKinsey + Y Combinator + Harvard Business Review caliber. Analyze the user's research query using the historical startup failure database AND the latest web information provided below. Return ONLY valid JSON matching this schema:
 {
-  "aiSummary": "A detailed 2-3 paragraph analysis matching the query, detailing the mistakes, comparisons, and structural patterns. Support markdown formatting in the text (like **bolding** and bullets).",
+  "aiSummary": "A detailed, structured analysis in MARKDOWN. Use '## headings', '*' bullets, '**bold**', and comparison TABLES (| col | col |) whenever comparing startups or patterns. Be dense, specific, evidence-backed — never generic. Never answer in plain paragraphs only.",
   "sources": ["slug-of-startup-1", "slug-of-startup-2"],
   "timeline": [
     { "year": "YYYY", "event": "Title of event", "startup": "Startup Name" }
@@ -604,8 +819,11 @@ ${history.map(h => `${h.role}: ${h.content}`).join('\n')}
   ],
   "keyLessons": [
     { "lesson": "A core lesson", "details": "Elaborate on how to avoid it." }
-  ]
+  ],
+  "consultantBrief": "markdown string — see instruction below"
 }
+
+${CONSULTANT_BRIEF_INSTRUCTION}
 
 Rules:
 - Prioritise the startup failure DATABASE for slug references, timelines, and relatedStartups.
@@ -627,7 +845,10 @@ ${historicalContext || 'No startups found in database.'}
 LATEST WEB INFORMATION:
 ${webContext || 'No web results available.'}
 
-${chatHistory}USER QUERY: ${query}`;
+${chatHistory}USER QUERY: ${query}${followUpQuestion ? `
+
+CURRENT FOLLOW-UP QUESTION (this is a follow-up to the continuing analysis above — answer it directly while returning the same JSON schema, updated to address it):
+${followUpQuestion}` : ''}`;
 
     // ── 4. Call AI ──────────────────────────────────────────────────────────
     const result = await callAI(prompt, 'research', query, { 
@@ -675,7 +896,7 @@ ${chatHistory}USER QUERY: ${query}`;
 // POST /api/ai/playbook
 router.post('/playbook', async (req, res) => {
   try {
-    const { idea, industry, stage, history = [] } = req.body;
+    const { idea, industry, stage, history = [], followUpQuestion } = req.body;
 
     if (!idea) return res.status(400).json({ error: 'Idea is required' });
 
@@ -695,7 +916,7 @@ ${history.map(h => `${h.role}: ${h.content}`).join('\n')}
 `
       : '';
 
-    const prompt = `SYSTEM: You are a startup advisor. Return ONLY valid JSON, no markdown, no explanation.
+    const prompt = `SYSTEM: You are an elite startup advisor operating at McKinsey + Y Combinator + Harvard Business Review caliber. Be specific, evidence-backed, and actionable — never generic. Return ONLY valid JSON, no markdown fences, no explanation outside the JSON.
 
 Startup Idea: ${idea}
 Industry: ${industry}
@@ -704,13 +925,19 @@ Stage: ${stage || 'idea'}
 WEB RESEARCH:
 ${webContext || 'No web data available.'}
 
-${chatHistory}Return this exact JSON schema:
+${followUpQuestion ? `CURRENT FOLLOW-UP QUESTION (this is a follow-up to the continuing analysis above — answer it directly while returning the same JSON schema, updated to address it):
+${followUpQuestion}
+
+` : ''}${chatHistory}Return this exact JSON schema:
 {
   "summary": "2-3 sentence overview of the key challenge for this startup",
   "checklist": ["actionable item 1", "actionable item 2", "actionable item 3", "actionable item 4", "actionable item 5"],
   "risks": ["risk 1", "risk 2", "risk 3"],
-  "nextSteps": ["step 1", "step 2", "step 3"]
-}`;
+  "nextSteps": ["step 1", "step 2", "step 3"],
+  "consultantBrief": "markdown string — see instruction below"
+}
+
+${CONSULTANT_BRIEF_INSTRUCTION}`;
 
     const result = await callAI(prompt, 'playbook', idea, { industry, webResults });
     res.json(result);
@@ -735,7 +962,7 @@ const founderPersonalities = {
 // POST /api/ai/autopsy
 router.post('/autopsy', async (req, res, next) => {
   try {
-    const { deckContent, industry, history = [] } = req.body;
+    const { deckContent, industry, history = [], followUpQuestion } = req.body;
 
     if (!deckContent) {
       return res.status(400).json({ error: 'Pitch deck content is required' });
@@ -760,9 +987,9 @@ ${history.map(h => `${h.role}: ${h.content}`).join('\n')}
       : '';
 
     // 2. Analyze deck with AI
-    const prompt = `SYSTEM: You are a "Pitch Deck Pathologist". Your job is to perform an "Autopsy" on a startup's pitch deck content.
+    const prompt = `SYSTEM: You are a "Pitch Deck Pathologist" operating at McKinsey + Y Combinator + Harvard Business Review caliber. Your job is to perform an "Autopsy" on a startup's pitch deck content.
 Compare the deck content against historical failure patterns in the ${industry || 'relevant'} industry.
-Look for red flags, unrealistic projections, or "dead-end" strategies that have killed startups before.
+Look for red flags, unrealistic projections, or "dead-end" strategies that have killed startups before. Be specific, evidence-backed, and candid — never generic.
 
 PITCH DECK CONTENT:
 ${deckContent}
@@ -770,7 +997,10 @@ ${deckContent}
 HISTORICAL FAILURE CONTEXT:
 ${failureContext}
 
-${chatHistory}Return ONLY valid JSON with this schema:
+${followUpQuestion ? `CURRENT FOLLOW-UP QUESTION (this is a follow-up to the continuing autopsy above — answer it directly while returning the same JSON schema, updated to address it):
+${followUpQuestion}
+
+` : ''}${chatHistory}Return ONLY valid JSON with this schema:
 {
   "overallRisk": "Low|Medium|High|Lethal",
   "lethalWeaknesses": [
@@ -789,8 +1019,11 @@ ${chatHistory}Return ONLY valid JSON with this schema:
   "investorConcerns": [{"title": "string", "description": "string"}],
   "competitiveAnalysis": "A 2-3 paragraph analysis of the competitive landscape and how this startup stacks up.",
   "recommendedImprovements": [{"title": "string", "description": "string"}],
-  "actionPlan": [{"phase": "string (e.g. Week 1-2)", "tasks": ["string"]}]
-}`;
+  "actionPlan": [{"phase": "string (e.g. Week 1-2)", "tasks": ["string"]}],
+  "consultantBrief": "markdown string — see instruction below"
+}
+
+${CONSULTANT_BRIEF_INSTRUCTION}`;
 
     let analysis;
 
@@ -972,8 +1205,11 @@ Return ONLY valid JSON with this schema:
 {
   "competitors": [{ "name": "string", "moat": "string", "threatLevel": "high|medium|low" }],
   "gapAnalysis": "A detailed 1-2 paragraph analysis of the market gap or lack thereof.",
-  "survivalStrategy": "A specific strategic recommendation to survive against these incumbents."
-}`;
+  "survivalStrategy": "A specific strategic recommendation to survive against these incumbents.",
+  "consultantBrief": "markdown string — see instruction below"
+}
+
+${CONSULTANT_BRIEF_INSTRUCTION}`;
 
     const analysis = await callAI(prompt, 'compare', idea, { industry, webResults });
     res.json(analysis);

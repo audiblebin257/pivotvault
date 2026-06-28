@@ -97,7 +97,7 @@ const FailureQuiz = () => {
               <span className="text-xs font-bold">{founderRank.rank}</span>
             </div>
           </div>
-          <button onClick={loadQuiz} className="inline-flex items-center gap-2 bg-surface-2 border border-border px-4 py-2.5 rounded-xl text-sm font-semibold text-text-secondary hover:text-text-primary hover:border-accent/40 transition-all">
+          <button onClick={loadQuiz} className="pv-btn-secondary">
             <RefreshCw className="w-4 h-4" />
             New Quiz
           </button>
@@ -138,7 +138,7 @@ const FailureQuiz = () => {
             </div>
             <button
               onClick={loadQuiz}
-              className="mt-4 sm:mt-0 px-6 py-3 bg-accent text-white rounded-lg font-semibold flex items-center gap-2"
+              className="pv-btn-primary mt-4 sm:mt-0"
             >
               <Zap className="w-4 h-4" />
               Start Quiz

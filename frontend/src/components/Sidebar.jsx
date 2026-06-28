@@ -2,13 +2,11 @@ import React from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Skull, Search, Zap, BarChart2, MessageSquare, Share2, Menu, X, Sparkles,
-  Bookmark, Brain, GitCompare, ClipboardCheck, Sun, Moon, LogOut, User,
+  Skull, Search, Zap, BarChart2, MessageSquare, Share2, X, Sparkles,
+  Brain, GitCompare, ClipboardCheck,
   FileText, PanelLeftClose, PanelLeft, Ghost
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
 
 const SidebarItem = ({ item, isCollapsed, onClick }) => {
   const Icon = item.icon;
@@ -17,7 +15,9 @@ const SidebarItem = ({ item, isCollapsed, onClick }) => {
     <NavLink
       to={item.path}
       onClick={onClick}
+      data-tour={item.tour}
       title={isCollapsed ? item.name : undefined}
+      aria-label={item.name}
       className={({ isActive }) => clsx(
         "pv-nav-item relative group mb-1",
         isCollapsed ? "justify-center h-12 w-12 mx-auto" : "px-3 py-2.5 gap-3 mx-2",
@@ -55,8 +55,6 @@ const SidebarItem = ({ item, isCollapsed, onClick }) => {
 };
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
-  const { theme, toggleTheme } = useTheme();
-  const { isAuthed, user, logout } = useAuth();
   const location = useLocation();
 
   React.useEffect(() => {
@@ -80,16 +78,16 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
   }, [isMobileOpen, setIsMobileOpen]);
 
   const coreNav = [
-    { name: 'Explore', path: '/explore', icon: Search },
-    { name: 'AI Assistant', path: '/assistant', icon: Sparkles },
-    { name: 'Risk Scanner', path: '/scan', icon: Zap },
-    { name: 'Founder Playbook', path: '/playbook', icon: ClipboardCheck },
+    { name: 'Explore', path: '/explore', icon: Search, tour: 'explore' },
+    { name: 'AI Assistant', path: '/assistant', icon: Sparkles, tour: 'assistant' },
+    { name: 'Risk Scanner', path: '/scan', icon: Zap, tour: 'scan' },
+    { name: 'Founder Playbook', path: '/playbook', icon: ClipboardCheck, tour: 'playbook' },
   ];
 
   const analysisNav = [
-    { name: 'Pitch Deck Autopsy', path: '/autopsy', icon: FileText },
+    { name: 'Pitch Deck Autopsy', path: '/autopsy', icon: FileText, tour: 'autopsy' },
     { name: 'Competitor Compare', path: '/compare', icon: GitCompare },
-    { name: 'Insights Dashboard', path: '/insights', icon: BarChart2 },
+    { name: 'Insights Dashboard', path: '/insights', icon: BarChart2, tour: 'insights' },
     { name: 'Startup Graph', path: '/graph', icon: Share2 },
   ];
 
@@ -139,93 +137,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
         <NavSection title="Core" items={coreNav} isCollapsed={collapsed} onItemClick={() => setIsMobileOpen(false)} />
         <NavSection title="Analysis" items={analysisNav} isCollapsed={collapsed} onItemClick={() => setIsMobileOpen(false)} />
         <NavSection title="Learn" items={learnNav} isCollapsed={collapsed} onItemClick={() => setIsMobileOpen(false)} />
-        
-        {/* Utilities */}
-        <div className="mt-4 pt-4 border-t border-border/40">
-          {!collapsed && <div className="px-4 mb-3 text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">System</div>}
-          
-          <SidebarItem item={{ name: 'Bookmarks', path: '/bookmarks', icon: Bookmark }} isCollapsed={collapsed} onClick={() => setIsMobileOpen(false)} />
-          
-          <button
-            onClick={toggleTheme}
-            className={clsx(
-              "pv-nav-item w-full relative group mb-1",
-              collapsed ? "justify-center h-12 w-12 mx-auto" : "px-3 py-2.5 gap-3 mx-2"
-            )}
-          >
-            {theme === 'blue' ? <Sun className="w-5 h-5 shrink-0" /> : <Moon className="w-5 h-5 shrink-0" />}
-            {!collapsed && <span className="text-sm tracking-tight whitespace-nowrap">{theme === 'blue' ? 'Light Mode' : 'Dark Mode'}</span>}
-          </button>
-
-          <SidebarItem item={{ name: 'Profile', path: '/history', icon: User }} isCollapsed={collapsed} onClick={() => setIsMobileOpen(false)} />
-          
-          {isAuthed && (
-            <button
-              onClick={() => { logout(); setIsMobileOpen(false); }}
-              className={clsx(
-                "pv-nav-item w-full relative hover:text-danger hover:bg-danger/5 group mb-1",
-                collapsed ? "justify-center h-12 w-12 mx-auto" : "px-3 py-2.5 gap-3 mx-2"
-              )}
-            >
-              <LogOut className="w-5 h-5 shrink-0" />
-              {!collapsed && <span className="text-sm tracking-tight whitespace-nowrap">Sign Out</span>}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Footer / User Profile */}
-      <div className={clsx(
-        "mt-auto p-4 border-t border-border/40 transition-all",
-        collapsed ? "items-center" : "bg-surface-2/30"
-      )}>
-        {isAuthed ? (
-          <div className={clsx("flex items-center gap-3 min-w-0", collapsed ? "justify-center" : "px-2")}>
-            <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center border border-accent/20 shrink-0">
-              <User className="w-5 h-5 text-accent" />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-text-primary truncate">{user?.name}</div>
-                <div className="text-[10px] text-text-muted truncate uppercase font-bold tracking-tighter">Founder</div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Link 
-            to="/login" 
-            onClick={() => setIsMobileOpen(false)}
-            className={clsx(
-              "flex items-center justify-center bg-accent hover:bg-accent-2 text-accent-contrast transition-all shadow-sm",
-              collapsed ? "w-10 h-10 rounded-full" : "w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest"
-            )}
-          >
-            {collapsed ? <LogOut className="w-4 h-4 rotate-180" /> : "Access Vault"}
-          </Link>
-        )}
       </div>
     </div>
   );
 
   return (
     <>
-      {/* Mobile Top Header */}
-      <header className="pv-mobile-header lg:hidden">
-        <Link to="/" className="flex items-center gap-2">
-          <Skull className="w-7 h-7 text-accent" />
-          <span className="font-display font-black text-sm tracking-tighter uppercase">PIVOTVAULT</span>
-        </Link>
-        <button
-          type="button"
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
-          aria-label={isMobileOpen ? 'Close navigation' : 'Open navigation'}
-          aria-expanded={isMobileOpen}
-          className="pv-btn-secondary pv-btn-icon"
-        >
-          {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </header>
-
       {/* Desktop Sidebar */}
       <aside className="pv-desktop-sidebar hidden lg:flex">
         <div className="h-full w-full min-w-0 overflow-hidden">

@@ -5,6 +5,8 @@ import './index.css';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { BookmarkProvider } from './context/BookmarkContext.jsx';
+import { WorkspaceProvider } from './context/WorkspaceContext.jsx';
+import { ToastProvider } from './components/Toast.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -13,7 +15,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <AuthProvider>
           <BookmarkProvider>
-            <App />
+            <WorkspaceProvider>
+              <ToastProvider>
+                <App />
+              </ToastProvider>
+            </WorkspaceProvider>
           </BookmarkProvider>
         </AuthProvider>
       </ThemeProvider>

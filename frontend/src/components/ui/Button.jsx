@@ -13,7 +13,7 @@ export const Button = ({
 }) => {
   const { isBeige, colors, radius } = useDesignSystem();
 
-  const baseClasses = 'inline-flex items-center justify-center font-medium transition-all active:scale-[0.97]';
+  const baseClasses = 'inline-flex items-center justify-center font-medium transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-60';
   
   const variantClasses = {
     primary: clsx(

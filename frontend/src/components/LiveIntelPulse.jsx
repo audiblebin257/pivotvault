@@ -2,8 +2,10 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Radio, Zap, Skull, MessageSquare, Terminal } from 'lucide-react';
 
-const IntelEvent = ({ event }) => (
+const IntelEvent = React.forwardRef(function IntelEvent({ event }, ref) {
+  return (
   <motion.div
+    ref={ref}
     initial={{ opacity: 0, x: -20 }}
     animate={{ opacity: 1, x: 0 }}
     exit={{ opacity: 0, x: 20 }}
@@ -18,7 +20,8 @@ const IntelEvent = ({ event }) => (
       <span className="text-text-primary font-bold">{event.startup}</span> {event.action}
     </span>
   </motion.div>
-);
+  );
+});
 
 const LiveIntelPulse = () => {
   const events = [
@@ -50,7 +53,7 @@ const LiveIntelPulse = () => {
     <div className="w-full bg-bg/50 border-y border-border/40 py-3 overflow-hidden relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6">
         <div className="flex items-center gap-2 shrink-0">
-          <Radio className="w-4 h-4 text-red animate-pulse" />
+          <Radio className="w-4 h-4 text-danger animate-pulse" />
           <span className="text-[10px] font-black text-text-primary uppercase tracking-[0.2em]">Live Intel Pulse</span>
         </div>
         

@@ -4,9 +4,7 @@ import { Sparkles, AlertTriangle, ArrowRight, TrendingUp, BarChart3, Database, S
 import StartupCard from '../components/StartupCard';
 import LiveIntelPulse from '../components/LiveIntelPulse';
 import SearchInput from '../components/ui/SearchInput';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -17,10 +15,10 @@ const LandingPage = () => {
   React.useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/startups?limit=4`);
-        setFeatured(response.data.data);
+        const response = await api.get('/startups?limit=4');
+        setFeatured(response.data.data || []);
       } catch (err) {
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
       } finally {
         setLoading(false);
       }
@@ -91,14 +89,14 @@ const LandingPage = () => {
               />
               <button
                 type="submit"
-                className="bg-accent hover:bg-accent-2 text-accent-contrast font-semibold px-6 py-3 rounded-lg transition-colors"
+                className="pv-btn-primary"
               >
                 Explore
               </button>
               <button
                 type="button"
                 onClick={(e) => handleSearch(e, 'ai')}
-                className="border border-border bg-surface-2 hover:bg-surface-3 text-text-primary font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                className="pv-btn-secondary flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 Ask AI
@@ -116,7 +114,7 @@ const LandingPage = () => {
                     setSearch(prompt);
                     navigate(`/assistant?q=${encodeURIComponent(prompt)}`);
                   }}
-                  className="text-sm text-text-secondary bg-surface border border-border hover:border-accent hover:text-accent px-3 py-1.5 rounded-md transition-colors font-medium"
+                  className="pv-btn-ghost text-sm"
                 >
                   {prompt}
                 </button>

@@ -56,7 +56,7 @@ const HistoryPage = () => {
           <Clock className="w-12 h-12 text-accent mx-auto mb-4" />
           <h2 className="text-xl font-display font-bold mb-2">No research history yet</h2>
           <p className="text-text-secondary text-sm mb-6">Run a query in the AI Assistant and it will appear here.</p>
-          <Link to="/assistant" className="inline-flex items-center gap-2 bg-accent text-white px-5 py-3 rounded-lg font-bold">
+          <Link to="/assistant" className="pv-btn-primary">
             Open assistant <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

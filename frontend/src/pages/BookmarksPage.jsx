@@ -35,7 +35,7 @@ const BookmarksPage = () => {
         </div>
         <button
           onClick={loadBookmarks}
-          className="inline-flex items-center justify-center gap-2 bg-surface-2 border border-border px-4 py-2.5 rounded-lg text-sm font-semibold text-text-secondary hover:text-text-primary"
+          className="pv-btn-secondary"
         >
           <RefreshCw className="w-4 h-4" />
           Refresh
@@ -55,7 +55,7 @@ const BookmarksPage = () => {
           <Bookmark className="w-12 h-12 text-accent mx-auto mb-4" />
           <h2 className="text-xl font-display font-bold mb-2">No saved postmortems yet</h2>
           <p className="text-text-secondary text-sm mb-6">Use the bookmark icon on startup cards to build your founder lesson vault.</p>
-          <Link to="/explore" className="inline-flex items-center gap-2 bg-accent text-white px-5 py-3 rounded-lg font-bold">
+          <Link to="/explore" className="pv-btn-primary">
             Explore failures <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

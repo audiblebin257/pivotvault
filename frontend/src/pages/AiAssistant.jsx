@@ -1,14 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, Search, AlertTriangle, ArrowRight, ShieldAlert, RefreshCw } from 'lucide-react';
+import { Sparkles, Search, ArrowRight, ShieldAlert, RefreshCw } from 'lucide-react';
 import StartupCard from '../components/StartupCard';
 import api from '../lib/api';
 import ConversationPanel from '../components/ui/ConversationPanel';
+import ErrorDisplay from '../components/ui/ErrorDisplay';
+import WorkspaceBar from '../components/WorkspaceBar';
 import { useLoading } from '../context/LoadingContext';
+import { useWorkspace } from '../context/WorkspaceContext';
 
 const AiAssistant = () => {
+  const { getSharedHistory, recordAnalysis } = useWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [originalQuery, setOriginalQuery] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const [conversation, setConversation] = React.useState([]);
   const [error, setError] = React.useState(null);
@@ -18,7 +24,11 @@ const AiAssistant = () => {
 
   const executeResearch = async (searchQuery, isFollowUp = false) => {
     if (!searchQuery.trim()) return;
-    showLoader('Researching startup intelligence...');
+    setLoading(true);
+    if (!isFollowUp) {
+      setOriginalQuery(searchQuery);
+      showLoader('Researching startup intelligence...');
+    }
     setError(null);
 
     const newHistory = isFollowUp
@@ -27,20 +37,29 @@ const AiAssistant = () => {
 
     try {
       const response = await api.post('/ai/research', {
-        query: searchQuery,
-        history: newHistory
+        query: isFollowUp ? originalQuery : searchQuery,
+        followUpQuestion: isFollowUp ? searchQuery : undefined,
+        history: getSharedHistory(newHistory, 'AI Research')
+      });
+
+      recordAnalysis({
+        tool: 'AI Research',
+        summary: `Researched: "${searchQuery}". ${(response.data.aiSummary || '').replace(/[#*`>]/g, '').slice(0, 240)}`,
       });
 
       setConversation(prev => [
         ...prev,
         { role: 'user', content: searchQuery },
-        { role: 'assistant', content: response.data.aiSummary, fullResult: response.data }
+        { role: 'assistant', content: response.data.consultantBrief || response.data.aiSummary, fullResult: response.data }
       ]);
     } catch (err) {
       console.error(err);
       setError('Failed to fetch research analytics. Check backend status.');
     } finally {
-      hideLoader();
+      setLoading(false);
+      if (!isFollowUp) {
+        hideLoader();
+      }
     }
   };
 
@@ -72,6 +91,7 @@ const AiAssistant = () => {
   const resetConversation = () => {
     setConversation([]);
     setQuery('');
+    setOriginalQuery('');
     setSearchParams({});
     setError(null);
   };
@@ -84,16 +104,17 @@ const AiAssistant = () => {
   ];
 
   const suggestedFollowUps = [
-    "Explain deeper",
-    "Show examples",
-    "Compare startups",
-    "Give recommendations",
-    "Generate action plan"
+    { label: "Explain deeper", prompt: "Explain the analysis above in more depth, with specific reasoning and evidence." },
+    { label: "Show examples", prompt: "Show concrete examples of startups from the analysis above that illustrate these patterns." },
+    { label: "Compare startups", prompt: "Compare the startups mentioned in the analysis above and highlight the key differences in why they failed." },
+    { label: "Give recommendations", prompt: "Based on the analysis above, give specific, actionable recommendations." },
+    { label: "Generate action plan", prompt: "Based on the analysis above, generate a concrete step-by-step action plan." }
   ];
 
   return (
     <div className="min-h-screen bg-bg">
       <div className="pv-content-container py-12">
+        <WorkspaceBar />
         {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent/20 bg-accent/5 text-accent text-[10px] font-semibold uppercase tracking-wider mb-3">
@@ -163,20 +184,14 @@ const AiAssistant = () => {
         )}
 
         {/* Error State */}
-        {error && (
-          <div className="max-w-md mx-auto pv-card p-6 border-danger/30 bg-danger/5 mt-12">
-            <AlertTriangle className="w-8 h-8 text-danger mx-auto mb-4" />
-            <p className="text-center text-text-primary font-semibold mb-3">{error}</p>
-            <div className="flex justify-center">
-              <button 
-                onClick={() => executeResearch(query)}
-                className="pv-btn-secondary"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        )}
+      {error && (
+        <div className="max-w-md mx-auto mt-12">
+          <ErrorDisplay 
+            message={error} 
+            onRetry={() => executeResearch(query)} 
+          />
+        </div>
+      )}
 
         {/* Result Presentation */}
         {conversation.length > 0 && (
@@ -289,7 +304,7 @@ const AiAssistant = () => {
               conversation={conversation}
               query={query}
               setQuery={setQuery}
-              loading={false}
+              loading={loading}
               onSend={handleSendFollowUp}
               suggestedFollowUps={suggestedFollowUps}
               onSuggestedFollowUp={handleSuggestedFollowUp}

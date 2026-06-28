@@ -3,10 +3,12 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Heart, Send, Ghost } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useToast } from '../components/Toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 const ConfessionWall = () => {
+  const toast = useToast();
   const [confessions, setConfessions] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [text, setText] = React.useState('');
@@ -37,7 +39,7 @@ const ConfessionWall = () => {
       setText('');
       fetchConfessions();
     } catch (err) {
-      alert(err.response?.data?.error || 'Submission failed');
+      toast({ title: err.response?.data?.error || 'Submission failed. Please try again.', type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -86,13 +88,13 @@ const ConfessionWall = () => {
               <div className="flex items-center justify-between">
                 <span className={clsx(
                   "text-[10px] font-bold uppercase",
-                  text.length > 250 ? "text-red" : "text-text-muted"
+                  text.length > 250 ? "text-danger" : "text-text-muted"
                 )}>
                   {text.length} / 280
                 </span>
                 <button
                   disabled={isSubmitting || text.length < 10}
-                  className="bg-accent hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"
+                  className="pv-btn-primary px-4 text-xs"
                 >
                   {isSubmitting ? 'Posting...' : 'Post Anonymously'}
                   <Send className="w-3 h-3" />
@@ -130,9 +132,10 @@ const ConfessionWall = () => {
                       </div>
                       <button 
                         onClick={() => handleUpvote(c.id)}
-                        className="flex items-center gap-2 text-text-secondary hover:text-red transition-colors group/btn"
+                        aria-label={`Upvote confession (${c.upvotes} upvotes)`}
+                        className="flex items-center gap-2 text-text-secondary hover:text-danger transition-colors group/btn"
                       >
-                        <Heart className="w-4 h-4 group-hover/btn:fill-red" />
+                        <Heart className="w-4 h-4 group-hover/btn:fill-danger" />
                         <span className="font-data text-xs">{c.upvotes}</span>
                       </button>
                     </div>

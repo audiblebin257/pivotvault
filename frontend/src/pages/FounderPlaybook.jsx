@@ -2,9 +2,16 @@ import React from 'react';
 import { ClipboardCheck, Loader2, Sparkles, AlertTriangle, RefreshCcw } from 'lucide-react';
 import api from '../lib/api';
 import ConversationPanel from '../components/ui/ConversationPanel';
+import WorkspaceBar from '../components/WorkspaceBar';
+import { useWorkspace } from '../context/WorkspaceContext';
 
 const FounderPlaybook = () => {
-  const [form, setForm] = React.useState({ idea: '', industry: 'SaaS', stage: 'idea' });
+  const { profile, getSharedHistory, recordAnalysis } = useWorkspace();
+  const [form, setForm] = React.useState({
+    idea: profile.idea || '',
+    industry: profile.industry || 'SaaS',
+    stage: profile.stage || 'idea',
+  });
   const [conversation, setConversation] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -15,7 +22,21 @@ const FounderPlaybook = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.post('/ai/playbook', form);
+      const { data } = await api.post('/ai/playbook', {
+        ...form,
+        history: getSharedHistory([], 'Founder Playbook'),
+      });
+
+      recordAnalysis({
+        tool: 'Founder Playbook',
+        summary: data.summary || data.consultantBrief?.split('\n').find(l => l.trim() && !l.startsWith('#'))?.trim(),
+        profilePatch: {
+          idea: form.idea,
+          industry: form.industry,
+          stage: form.stage,
+        },
+      });
+
       setConversation([
         {
           role: 'user',
@@ -23,7 +44,7 @@ const FounderPlaybook = () => {
         },
         {
           role: 'assistant',
-          content: "Here's your strategic playbook.",
+          content: data.consultantBrief || "Here's your strategic playbook.",
           fullResult: data
         }
       ]);
@@ -34,18 +55,19 @@ const FounderPlaybook = () => {
     }
   };
 
-  const handleFollowUp = async () => {
-    if (!query.trim()) return;
+  const handleFollowUp = async (followUpText) => {
+    const question = (followUpText ?? query).trim();
+    if (!question) return;
 
     setLoading(true);
     const newHistory = conversation.map(msg => ({ role: msg.role, content: msg.content }));
 
     try {
-      const { data } = await api.post('/ai/playbook', { ...form, history: newHistory });
+      const { data } = await api.post('/ai/playbook', { ...form, history: getSharedHistory(newHistory, 'Founder Playbook'), followUpQuestion: question });
       setConversation(prev => [
         ...prev,
-        { role: 'user', content: query },
-        { role: 'assistant', content: "Here's your updated analysis.", fullResult: data }
+        { role: 'user', content: question },
+        { role: 'assistant', content: data.consultantBrief || "Here's your updated analysis.", fullResult: data }
       ]);
       setQuery('');
     } catch (err) {
@@ -57,7 +79,7 @@ const FounderPlaybook = () => {
 
   const handleSuggestedFollowUp = (suggestedQuery) => {
     setQuery(suggestedQuery);
-    handleFollowUp();
+    handleFollowUp(suggestedQuery);
   };
 
   const reset = () => {
@@ -69,16 +91,17 @@ const FounderPlaybook = () => {
 
   const lastResult = conversation.length > 0 ? conversation[conversation.length - 1].fullResult : null;
   const suggestedFollowUps = [
-    "Explain deeper",
-    "Show examples",
-    "Compare startups",
-    "Give recommendations",
-    "Generate action plan"
+    { label: "Explain deeper", prompt: "Explain the playbook above in more depth, with specific reasoning behind each checklist item and risk." },
+    { label: "Show examples", prompt: "Show concrete examples of startups that succeeded or failed at the validation steps in the checklist above." },
+    { label: "Compare startups", prompt: "Compare my idea against similar startups and explain what the playbook above implies I should do differently." },
+    { label: "Give recommendations", prompt: "Based on the playbook above, give specific, actionable recommendations for my current stage." },
+    { label: "Generate action plan", prompt: "Based on the playbook above, generate a concrete 90-day step-by-step action plan." }
   ];
 
   return (
     <div className="min-h-screen bg-bg">
       <div className="pv-content-container py-12">
+        <WorkspaceBar />
         {/* Header */}
         <div className="mb-10">
           <div className="flex items-center justify-between mb-3">

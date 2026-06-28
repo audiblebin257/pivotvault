@@ -35,7 +35,7 @@ export default function AdminPanel() {
               <p className="text-sm whitespace-pre-wrap">{c.content}</p>
               <button
                 onClick={() => toggleApproval(c.id, c.approved)}
-                className="mt-1 text-xs bg-blue-500 text-white px-2 py-1 rounded"
+                className="mt-1 text-xs bg-info text-white px-2 py-1 rounded"
               >
                 {c.approved ? 'Un-approve' : 'Approve'}
               </button>

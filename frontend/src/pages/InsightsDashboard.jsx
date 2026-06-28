@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { clsx } from 'clsx';
 import React from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 import CountUp from 'react-countup';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -12,8 +12,6 @@ import {
   Skull, AlertTriangle, ShieldAlert, DollarSign 
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 // Chart color palette
 const chartColors = [
@@ -35,10 +33,10 @@ const InsightsDashboard = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/insights`); 
+        const response = await api.get('/insights');
         setData(response.data);
       } catch (err) {
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
       } finally {
         setLoading(false);
       }
@@ -192,7 +190,7 @@ const InsightsDashboard = () => {
                   cx="50%"
                   cy="50%"
                   outerRadius={90}
-                  stroke={theme === 'blue' ? '#2A2A2A' : 'var(--color-border)'}
+                  stroke={theme === 'blue' ? '#2A2A2A' : 'rgb(var(--color-border))'}
                   strokeWidth={2}
                 >
                   {(data.industryBreakdown || []).map((entry, index) => (
@@ -215,18 +213,18 @@ const InsightsDashboard = () => {
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.topFailureReasonsByIndustry || []} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border))" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis 
                   dataKey="category" 
                   type="category" 
-                  tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
+                  tick={{ fill: 'rgb(var(--color-text-muted))', fontSize: 11 }}
                   tickFormatter={(val) => val.toUpperCase().replace(/_/g, ' ')}
                   width={110}
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color-surface-2)' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgb(var(--color-surface-2))' }} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={16}>
                   {(data.topFailureReasonsByIndustry || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
@@ -254,9 +252,9 @@ const InsightsDashboard = () => {
                     <stop offset="95%" stopColor={chartColors[0]} stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="year" tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} />
-                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border))" vertical={false} />
+                <XAxis dataKey="year" tick={{ fill: 'rgb(var(--color-text-muted))', fontSize: 11 }} axisLine={false} />
+                <YAxis tick={{ fill: 'rgb(var(--color-text-muted))', fontSize: 11 }} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Area type="monotone" dataKey="count" stroke={chartColors[0]} strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" />
               </AreaChart>

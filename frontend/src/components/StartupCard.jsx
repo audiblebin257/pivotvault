@@ -5,7 +5,7 @@ import { clsx } from 'clsx';
 import BookmarkButton from './BookmarkButton';
 import Logo from './Logo';
 
-const StartupCard = ({ 
+const StartupCard = React.memo(({ 
   name, 
   slug, 
   status, 
@@ -114,6 +114,6 @@ const StartupCard = ({
       </div>
     </Link>
   );
-};
+});
 
 export default StartupCard;

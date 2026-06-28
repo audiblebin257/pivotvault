@@ -5,19 +5,13 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = "" }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    console.log("CrowdCanvas mounted");
     const canvas = canvasRef.current;
-    if (!canvas) {
-      console.error("Canvas not found");
-      return;
-    }
-    console.log("Canvas ready");
+    if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      console.error("Canvas context not found");
-      return;
-    }
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
 
     // Utility functions
     const randomRange = (min, max) => min + Math.random() * (max - min);
@@ -31,7 +25,6 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = "" }) => {
 
     // Process sprite sheet to only make white background transparent, preserve all other colors
     const processSpriteSheet = (originalImage) => {
-      console.log(`Processing sprite sheet: ${originalImage.src}`);
       const offscreenCanvas = document.createElement("canvas");
       offscreenCanvas.width = originalImage.naturalWidth;
       offscreenCanvas.height = originalImage.naturalHeight;
@@ -128,11 +121,8 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = "" }) => {
     const crowd = [];
 
     const createPeeps = () => {
-      console.log("Creating peeps from sprite sheet");
-      console.log(`Sprite dimensions: ${processedImg.naturalWidth} x ${processedImg.naturalHeight}`);
       const rectWidth = processedImg.naturalWidth / rows;
       const rectHeight = processedImg.naturalHeight / cols;
-      console.log(`Sprite dimensions per peep: ${rectWidth} x ${rectHeight}`);
 
       for (let i = 0; i < rows * cols; i++) {
         allPeeps.push(
@@ -147,15 +137,12 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = "" }) => {
           })
         );
       }
-      console.log(`Created ${allPeeps.length} peeps`);
     };
 
     const initCrowd = () => {
-      console.log("Initializing crowd");
       while (availablePeeps.length) {
         addPeepToCrowd().walk.progress(Math.random());
       }
-      console.log("Animation started");
     };
 
     const addPeepToCrowd = () => {
@@ -183,7 +170,7 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = "" }) => {
       if (!canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-      ctx.scale(devicePixelRatio, devicePixelRatio);
+      ctx.scale(dpr, dpr);
       crowd.forEach((peep) => {
         peep.render(ctx);
       });
@@ -191,12 +178,11 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = "" }) => {
     };
 
     const resize = () => {
-      console.log("Resizing canvas");
       if (!canvas) return;
       stage.width = canvas.clientWidth;
       stage.height = canvas.clientHeight;
-      canvas.width = stage.width * devicePixelRatio;
-      canvas.height = stage.height * devicePixelRatio;
+      canvas.width = stage.width * dpr;
+      canvas.height = stage.height * dpr;
 
       crowd.forEach((peep) => {
         if (peep.walk) peep.walk.kill();
@@ -208,7 +194,6 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = "" }) => {
     };
 
     const init = () => {
-      console.log("CrowdCanvas init");
       createPeeps();
       resize();
       gsap.ticker.add(render);
@@ -217,16 +202,12 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = "" }) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      console.log("Image loaded");
       processedImg = processSpriteSheet(img);
       processedImg.onload = () => {
-        console.log("Processed image loaded");
         init();
       };
     };
-    img.onerror = (err) => {
-      console.error("Error loading image", err);
-    };
+    img.onerror = () => {};
     img.src = src;
 
     const handleResize = () => resize();

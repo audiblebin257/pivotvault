@@ -36,7 +36,7 @@ const HallOfGhosts = () => {
   return (
     <div className="pv-content-container py-12">
       <div className="text-center mb-16">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-red/20 bg-red/5 text-red text-xs font-semibold uppercase tracking-wider mb-3">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-danger/20 bg-danger/5 text-danger text-xs font-semibold uppercase tracking-wider mb-3">
           <Ghost className="w-3.5 h-3.5" />
           The Afterlife
         </div>
@@ -93,7 +93,7 @@ const HallOfGhosts = () => {
                 </p>
 
                 <div className="flex items-center justify-between mt-auto">
-                  <div className="flex items-center gap-1.5 text-[10px] font-black text-red uppercase tracking-widest">
+                  <div className="flex items-center gap-1.5 text-[10px] font-black text-danger uppercase tracking-widest">
                     <AlertCircle className="w-3.5 h-3.5" />
                     Failed {startup.closedYear}
                   </div>

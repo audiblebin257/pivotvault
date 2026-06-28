@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 
-export default function SearchInput({ 
+const SearchInput = React.forwardRef(function SearchInput({ 
   placeholder = "Search...", 
   value, 
   onChange, 
@@ -9,7 +9,7 @@ export default function SearchInput({
   size = "md",
   disabled = false,
   ...props 
-}) {
+}, ref) {
   const sizeClasses = {
     sm: "h-10 !pl-10 !pr-3 text-sm",
     md: "h-12 !pl-12 !pr-4 text-base",
@@ -34,6 +34,7 @@ export default function SearchInput({
         className={`absolute top-1/2 -translate-y-1/2 text-text-muted ${iconSizeClasses[size]} ${iconPositionClasses[size]}`} 
       />
       <input
+        ref={ref}
         type="text"
         placeholder={placeholder}
         value={value}
@@ -44,4 +45,6 @@ export default function SearchInput({
       />
     </div>
   );
-}
+});
+
+export default SearchInput;

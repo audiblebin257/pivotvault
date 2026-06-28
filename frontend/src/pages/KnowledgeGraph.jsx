@@ -1,12 +1,23 @@
 import React from 'react';
-import * as d3 from 'd3';
-import axios from 'axios';
-import { Info, ZoomIn, ZoomOut, RotateCcw, Building2, MapPin, Skull, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { select } from 'd3-selection';
+import { zoom as d3Zoom, zoomIdentity } from 'd3-zoom';
+import { drag as d3Drag } from 'd3-drag';
+import {
+  forceSimulation,
+  forceLink,
+  forceManyBody,
+  forceCenter,
+  forceX,
+  forceY,
+  forceCollide
+} from 'd3-force';
+import 'd3-transition';
+import { ZoomIn, ZoomOut, RotateCcw, Building2, MapPin, Skull, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import Logo from '../components/Logo';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 // Node color definitions
 const getNodeColors = (d) => {
@@ -32,10 +43,10 @@ const KnowledgeGraph = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/graph/edges`);
+        const response = await api.get('/graph/edges');
         setData(response.data);
       } catch (err) {
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
       } finally {
         setLoading(false);
       }
@@ -106,9 +117,9 @@ const KnowledgeGraph = () => {
     });
 
     // Clear previous svg
-    d3.select(containerRef.current).selectAll("svg").remove();
+    select(containerRef.current).selectAll("svg").remove();
 
-    const svg = d3.select(containerRef.current)
+    const svg = select(containerRef.current)
       .append("svg")
       .attr("width", width)
       .attr("height", height)
@@ -119,20 +130,20 @@ const KnowledgeGraph = () => {
     const g = svg.append("g");
 
     // Zoom behavior
-    const zoom = d3.zoom()
+    const zoom = d3Zoom()
       .scaleExtent([0.2, 5])
       .on("zoom", (event) => g.attr("transform", event.transform));
 
     zoomRef.current = zoom;
     svg.call(zoom);
 
-    const simulation = d3.forceSimulation(processedNodes)
-      .force("link", d3.forceLink(processedLinks).id(d => d.id).distance(200))
-      .force("charge", d3.forceManyBody().strength(-600))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("x", d3.forceX(width / 2).strength(0.03))
-      .force("y", d3.forceY(height / 2).strength(0.03))
-      .force("collide", d3.forceCollide().radius(40));
+    const simulation = forceSimulation(processedNodes)
+      .force("link", forceLink(processedLinks).id(d => d.id).distance(200))
+      .force("charge", forceManyBody().strength(-600))
+      .force("center", forceCenter(width / 2, height / 2))
+      .force("x", forceX(width / 2).strength(0.03))
+      .force("y", forceY(height / 2).strength(0.03))
+      .force("collide", forceCollide().radius(40));
 
     // Links with theme-aware colors
     const link = g.append("g")
@@ -148,7 +159,7 @@ const KnowledgeGraph = () => {
       .selectAll("g")
       .data(processedNodes)
       .join("g")
-      .call(d3.drag()
+      .call(d3Drag()
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended))
@@ -173,13 +184,13 @@ const KnowledgeGraph = () => {
       .attr("stroke-width", 3)
       .style("cursor", d => (d.type === 'startup' || d.type === 'company') ? 'pointer' : 'default')
       .on("mouseenter", function(event, d) {
-        d3.select(this)
+        select(this)
           .transition()
           .duration(200)
           .attr("r", d => (d.type === 'startup' || d.type === 'company' ? 20 : d.type === 'mistake' || d.type === 'failure_reason' ? 16 : 22));
       })
       .on("mouseleave", function(event, d) {
-        d3.select(this)
+        select(this)
           .transition()
           .duration(200)
           .attr("r", d => (d.type === 'startup' || d.type === 'company' ? 16 : d.type === 'mistake' || d.type === 'failure_reason' ? 12 : 18));
@@ -231,19 +242,19 @@ const KnowledgeGraph = () => {
 
   const handleZoomIn = () => {
     if (svgRef.current && zoomRef.current) {
-      d3.select(svgRef.current).transition().duration(300).call(zoomRef.current.scaleBy, 1.3);
+      select(svgRef.current).transition().duration(300).call(zoomRef.current.scaleBy, 1.3);
     }
   };
 
   const handleZoomOut = () => {
     if (svgRef.current && zoomRef.current) {
-      d3.select(svgRef.current).transition().duration(300).call(zoomRef.current.scaleBy, 0.7);
+      select(svgRef.current).transition().duration(300).call(zoomRef.current.scaleBy, 0.7);
     }
   };
 
   const handleResetZoom = () => {
     if (svgRef.current && zoomRef.current) {
-      d3.select(svgRef.current).transition().duration(300).call(zoomRef.current.transform, d3.zoomIdentity);
+      select(svgRef.current).transition().duration(300).call(zoomRef.current.transform, zoomIdentity);
     }
   };
 
@@ -328,13 +339,13 @@ const KnowledgeGraph = () => {
               </div>
             </div>
 
-            <a 
-              href={`/startup/${selectedNode.slug}`}
+            <Link
+              to={`/startup/${selectedNode.slug}`}
               className="mt-auto pv-btn-primary flex items-center justify-center gap-2"
             >
               View Full Postmortem
               <Skull className="w-4 h-4" />
-            </a>
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>

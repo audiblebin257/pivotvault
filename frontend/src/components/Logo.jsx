@@ -36,8 +36,8 @@ const logoMap = {
   "beepi": "/logos/beepi.jpg",
   "betterplace": "/logos/betterplace.jpg",
   "better": "/logos/betterplace.jpg",
-  "colorlab": "/logos/color lab.png",
-  "colorlabs": "/logos/color lab.png"
+  "colorlab": "/logos/color lab.webp",
+  "colorlabs": "/logos/color lab.webp"
 };
 
 const Logo = ({

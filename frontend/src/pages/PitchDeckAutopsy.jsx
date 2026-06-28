@@ -5,10 +5,15 @@ import api from '../lib/api';
 import { clsx } from 'clsx';
 import JSZip from 'jszip';
 import ConversationPanel from '../components/ui/ConversationPanel';
+import WorkspaceBar from '../components/WorkspaceBar';
+import { useWorkspace } from '../context/WorkspaceContext';
+import { useToast } from '../components/Toast';
 
 const PitchDeckAutopsy = () => {
+  const { profile, getSharedHistory, recordAnalysis } = useWorkspace();
+  const toast = useToast();
   const [deckContent, setDeckContent] = React.useState('');
-  const [industry, setIndustry] = React.useState('SaaS');
+  const [industry, setIndustry] = React.useState(profile.industry || 'SaaS');
   const [loading, setLoading] = React.useState(false);
   const [parsing, setParsing] = React.useState(false);
   const [conversation, setConversation] = React.useState([]);
@@ -39,12 +44,12 @@ const PitchDeckAutopsy = () => {
         setDeckContent(fullText.trim());
       } catch (err) {
         console.error('Error parsing PPTX:', err);
-        alert('Failed to parse PPTX file. Please try pasting the text manually.');
+        toast({ title: 'Failed to parse PPTX. Please paste the text manually.', type: 'error' });
       } finally {
         setParsing(false);
       }
     } else {
-      alert('Please upload a .pptx file.');
+      toast({ title: 'Please upload a .pptx file.', type: 'error' });
     }
   };
 
@@ -54,7 +59,19 @@ const PitchDeckAutopsy = () => {
 
     setLoading(true);
     try {
-      const response = await api.post('/ai/autopsy', { deckContent, industry });
+      const response = await api.post('/ai/autopsy', {
+        deckContent,
+        industry,
+        history: getSharedHistory([], 'Pitch Deck Autopsy'),
+      });
+
+      recordAnalysis({
+        tool: 'Pitch Deck Autopsy',
+        summary: response.data.pathologistVerdict
+          || `Overall deck risk: ${response.data.overallRisk}. ${(response.data.executiveSummary || '').slice(0, 200)}`,
+        profilePatch: { industry },
+      });
+
       setConversation([
         {
           role: 'user',
@@ -62,7 +79,7 @@ const PitchDeckAutopsy = () => {
         },
         {
           role: 'assistant',
-          content: "Here's your pitch deck autopsy.",
+          content: response.data.consultantBrief || "Here's your pitch deck autopsy.",
           fullResult: response.data
         }
       ]);
@@ -73,18 +90,19 @@ const PitchDeckAutopsy = () => {
     }
   };
 
-  const handleFollowUp = async () => {
-    if (!query.trim()) return;
+  const handleFollowUp = async (followUpText) => {
+    const question = (followUpText ?? query).trim();
+    if (!question) return;
 
     setLoading(true);
     const newHistory = conversation.map(msg => ({ role: msg.role, content: msg.content }));
 
     try {
-      const response = await api.post('/ai/autopsy', { deckContent, industry, history: newHistory });
+      const response = await api.post('/ai/autopsy', { deckContent, industry, history: getSharedHistory(newHistory, 'Pitch Deck Autopsy'), followUpQuestion: question });
       setConversation(prev => [
         ...prev,
-        { role: 'user', content: query },
-        { role: 'assistant', content: "Here's your updated analysis.", fullResult: response.data }
+        { role: 'user', content: question },
+        { role: 'assistant', content: response.data.consultantBrief || "Here's your updated analysis.", fullResult: response.data }
       ]);
       setQuery('');
     } catch (err) {
@@ -96,7 +114,7 @@ const PitchDeckAutopsy = () => {
 
   const handleSuggestedFollowUp = (suggestedQuery) => {
     setQuery(suggestedQuery);
-    handleFollowUp();
+    handleFollowUp(suggestedQuery);
   };
 
   const reset = () => {
@@ -108,14 +126,15 @@ const PitchDeckAutopsy = () => {
 
   const lastResult = conversation.length > 0 ? conversation[conversation.length - 1].fullResult : null;
   const suggestedFollowUps = [
-    "Explain more",
-    "Why is this risky?",
-    "How can I improve this?",
-    "Compare with successful startups"
+    { label: "Explain more", prompt: "Explain the autopsy findings above in more depth, focusing on the lethal weaknesses." },
+    { label: "Why is this risky?", prompt: "Explain in detail why the weaknesses identified above are risky, citing the historical precedents." },
+    { label: "How can I improve this?", prompt: "Based on the autopsy above, give specific, actionable improvements to fix the lethal weaknesses in my deck." },
+    { label: "Compare with successful startups", prompt: "Compare my pitch deck against successful startups in this industry and explain what they did differently." }
   ];
 
   return (
     <div className="pv-content-container py-12">
+      <WorkspaceBar />
       <div className="text-center mb-12">
         <div className="flex items-center justify-center gap-4 mb-4">
           <Activity className="w-16 h-16 text-accent" />
@@ -148,7 +167,7 @@ const PitchDeckAutopsy = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-text-secondary uppercase tracking-widest">Startup Industry</label>
                   <select
-                    className="w-full bg-surface-2 border border-border rounded-lg p-4 focus:outline-none focus:border-accent"
+                    className="pv-field"
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
                   >
@@ -201,7 +220,7 @@ const PitchDeckAutopsy = () => {
                   required
                   placeholder="Paste the text from your pitch deck here. Include your Problem, Solution, Market Size, and Monetization slides..."
                   rows={10}
-                  className="w-full bg-surface-2 border border-border rounded-lg p-4 focus:outline-none focus:border-accent font-mono text-sm leading-relaxed"
+                  className="pv-field font-mono"
                   value={deckContent}
                   onChange={(e) => setDeckContent(e.target.value)}
                 />
@@ -210,16 +229,16 @@ const PitchDeckAutopsy = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-red hover:bg-red-700 text-white font-bold py-5 rounded-lg text-xl transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full pv-btn-primary justify-center text-lg"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                     PERFORMING AUTOPSY...
                   </>
                 ) : (
                   <>
-                    <Search className="w-6 h-6" />
+                    <Search className="w-5 h-5" />
                     Begin Autopsy
                   </>
                 )}
@@ -241,12 +260,12 @@ const PitchDeckAutopsy = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className={clsx(
                       "md:col-span-1 pv-card p-8 flex flex-col items-center justify-center text-center border-l-8",
-                      lastResult.overallRisk === 'Lethal' ? "border-l-red bg-red/5" : "border-l-warning bg-warning/5"
+                      lastResult.overallRisk === 'Lethal' ? "border-l-danger bg-danger/5" : "border-l-warning bg-warning/5"
                     )}>
                       <div className="text-sm font-bold text-text-muted uppercase tracking-[0.2em] mb-4">Overall Risk</div>
                       <div className={clsx(
                         "text-5xl font-data font-bold mb-2",
-                        lastResult.overallRisk === 'Lethal' ? "text-red" : "text-warning"
+                        lastResult.overallRisk === 'Lethal' ? "text-danger" : "text-warning"
                       )}>{lastResult.overallRisk}</div>
                       <div className="flex items-center gap-2 text-text-secondary text-xs uppercase font-bold tracking-widest">
                         <ShieldAlert className="w-4 h-4" />

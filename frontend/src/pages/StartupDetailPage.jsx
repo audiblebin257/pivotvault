@@ -16,7 +16,6 @@ import {
   ExternalLink,
   Search,
   Clock,
-  Users,
   Trophy,
   Building2
 } from 'lucide-react';
@@ -34,7 +33,7 @@ export default function StartupDetailPage() {
       try {
         const startupRes = await api.get(`/startups/${slug}`);
         setStartup(startupRes.data);
-        
+
         // Fetch external research after getting startup data
         setSourcesLoading(true);
         try {
@@ -56,23 +55,40 @@ export default function StartupDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center" role="status" aria-live="polite">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400 text-lg">Loading intelligence report...</p>
+          <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-text-secondary text-lg">Loading intelligence report…</p>
         </div>
       </div>
     );
   }
 
   if (!startup) {
-    return <div className="p-8 text-red-500">Startup not found</div>;
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-8">
+        <div className="pv-card p-10 text-center max-w-md">
+          <AlertTriangle className="w-10 h-10 text-danger mx-auto mb-4" />
+          <p className="text-text-primary font-semibold">Startup not found</p>
+        </div>
+      </div>
+    );
   }
 
   const hasCaseStudy = startup.caseStudy;
 
+  const caseStudySections = [
+    { key: 'originStory', title: 'Origin Story', icon: Building2, iconClass: 'text-accent' },
+    { key: 'marketProblem', title: 'The Market Problem', icon: AlertTriangle, iconClass: 'text-danger' },
+    { key: 'businessModel', title: 'Business Model', icon: Target, iconClass: 'text-success' },
+    { key: 'earlyGrowth', title: 'Early Growth', icon: TrendingUp, iconClass: 'text-accent' },
+    { key: 'scalingPhase', title: 'The Scaling Phase', icon: TrendingUp, iconClass: 'text-info' },
+    { key: 'warningSigns', title: 'The Warning Signs', icon: AlertTriangle, iconClass: 'text-warning' },
+    { key: 'collapseSequence', title: 'The Collapse', icon: Skull, iconClass: 'text-danger' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-12">
+    <div className="min-h-screen bg-bg py-12">
       <div className="max-w-5xl mx-auto px-4">
         {/* Hero Header */}
         <div className="text-center mb-16">
@@ -81,62 +97,62 @@ export default function StartupDetailPage() {
               name={startup.name} 
               domain={startup.domain} 
               size="xl" 
-              className="rounded-2xl shadow-xl"
+              className="rounded-2xl shadow-elevated"
             />
           </div>
           <div className="inline-flex items-center gap-2 mb-4">
-            <h1 className="text-5xl md:text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+            <h1 className="text-5xl md:text-6xl font-display font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-accent to-accent-2">
               {startup.name}
             </h1>
             {startup.isAiGenerated && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-full border border-purple-500/30">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-accent/10 text-accent text-xs font-bold rounded-full border border-accent/30">
                 <Sparkles size={14} />
                 AI Generated
               </span>
             )}
           </div>
-          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
             {startup.summary}
           </p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
+          <div className="pv-card p-6">
+            <div className="flex items-center gap-2 mb-2 text-text-muted">
               <Calendar className="w-5 h-5" />
               <span className="text-xs uppercase font-bold tracking-wider">Founded</span>
             </div>
-            <div className="text-2xl font-bold text-slate-800 dark:text-white">
+            <div className="text-2xl font-data font-bold text-text-primary">
               {startup.foundingYear}
             </div>
           </div>
           {startup.shutdownYear && (
-            <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-2xl p-6 shadow-lg border border-red-100 dark:border-red-700/30">
-              <div className="flex items-center gap-2 mb-2 text-red-600/80 dark:text-red-300/80">
+            <div className="pv-card p-6 border-danger/30 bg-danger/5">
+              <div className="flex items-center gap-2 mb-2 text-danger">
                 <Skull className="w-5 h-5" />
                 <span className="text-xs uppercase font-bold tracking-wider">Shutdown</span>
               </div>
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              <div className="text-2xl font-data font-bold text-danger">
                 {startup.shutdownYear}
               </div>
             </div>
           )}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
+          <div className="pv-card p-6">
+            <div className="flex items-center gap-2 mb-2 text-text-muted">
               <Clock className="w-5 h-5" />
               <span className="text-xs uppercase font-bold tracking-wider">Lifespan</span>
             </div>
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-2xl font-data font-bold text-accent">
               {startup.lifetimeMonths} months
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
+          <div className="pv-card p-6">
+            <div className="flex items-center gap-2 mb-2 text-text-muted">
               <DollarSign className="w-5 h-5" />
               <span className="text-xs uppercase font-bold tracking-wider">Total Funding</span>
             </div>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="text-2xl font-data font-bold text-success">
               ${(Number(startup.fundingInr) / 1000000000).toFixed(1)}B
             </div>
           </div>
@@ -146,7 +162,7 @@ export default function StartupDetailPage() {
         {startup.tags && startup.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-12 justify-center">
             {startup.tags.map((tag, i) => (
-              <span key={i} className="inline-flex items-center gap-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full text-sm font-medium">
+              <span key={i} className="inline-flex items-center gap-1 px-4 py-2 bg-surface-2 text-text-secondary border border-border rounded-full text-sm font-medium">
                 <Tag size={14} />
                 {tag}
               </span>
@@ -157,19 +173,19 @@ export default function StartupDetailPage() {
         {/* Timeline */}
         {startup.timelineEvents?.length > 0 && (
           <section className="mb-16">
-            <div className="flex items-center gap-3 mb-8 pb-2 border-b border-slate-200 dark:border-slate-700">
-              <Calendar className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Growth Timeline</h2>
+            <div className="flex items-center gap-3 mb-8 pb-2 border-b border-border">
+              <Calendar className="w-7 h-7 text-accent" />
+              <h2 className="text-2xl font-display font-bold text-text-primary">Growth Timeline</h2>
             </div>
-            <div className="relative border-l-4 border-blue-200 dark:border-blue-700 ml-3 pl-8 space-y-8">
+            <div className="relative border-l-4 border-accent/30 ml-3 pl-8 space-y-8">
               {startup.timelineEvents.map((ev, i) => (
                 <div key={i} className="relative">
-                  <div className="absolute -left-10 -top-1 w-6 h-6 bg-blue-500 rounded-full border-4 border-white dark:border-slate-900 shadow-md" />
-                  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md border border-slate-100 dark:border-slate-700">
-                    <div className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-2">{ev.year}</div>
-                    <div className="text-slate-700 dark:text-slate-300 font-medium text-lg">{ev.title}</div>
+                  <div className="absolute -left-10 -top-1 w-6 h-6 bg-accent rounded-full border-4 border-bg shadow-sm" />
+                  <div className="pv-card p-6">
+                    <div className="text-sm font-data font-bold text-accent mb-2">{ev.year}</div>
+                    <div className="text-text-primary font-medium text-lg">{ev.title}</div>
                     {ev.description && (
-                      <div className="text-slate-600 dark:text-slate-400 mt-2">{ev.description}</div>
+                      <div className="text-text-secondary mt-2">{ev.description}</div>
                     )}
                   </div>
                 </div>
@@ -181,158 +197,82 @@ export default function StartupDetailPage() {
         {/* Case Study Sections */}
         {hasCaseStudy && (
           <section className="mb-16">
-            <div className="flex items-center gap-3 mb-8 pb-2 border-b border-slate-200 dark:border-slate-700">
-              <BookOpen className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Full Case Study</h2>
+            <div className="flex items-center gap-3 mb-8 pb-2 border-b border-border">
+              <BookOpen className="w-7 h-7 text-accent" />
+              <h2 className="text-2xl font-display font-bold text-text-primary">Full Case Study</h2>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+            <div className="pv-card overflow-hidden">
               <div className="p-8 space-y-12">
-                {/* Origin Story */}
-                {startup.caseStudy.originStory && (
-                  <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <Building2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">Origin Story</h3>
+                {/* Narrative sections rendered from config */}
+                {caseStudySections.map(({ key, title, icon: Icon, iconClass }) =>
+                  startup.caseStudy[key] ? (
+                    <div key={key}>
+                      <div className="flex items-center gap-3 mb-4 pb-2 border-b border-border">
+                        <Icon className={`w-6 h-6 ${iconClass}`} />
+                        <h3 className="text-xl font-display font-bold text-text-primary">{title}</h3>
+                      </div>
+                      <p className="text-lg text-text-secondary leading-relaxed whitespace-pre-line">
+                        {startup.caseStudy[key]}
+                      </p>
                     </div>
-                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                      {startup.caseStudy.originStory}
-                    </p>
-                  </div>
+                  ) : null
                 )}
 
-                {/* Market Problem */}
-                {startup.caseStudy.marketProblem && (
-                  <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">The Market Problem</h3>
-                    </div>
-                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                      {startup.caseStudy.marketProblem}
-                    </p>
-                  </div>
-                )}
-
-                {/* Business Model */}
-                {startup.caseStudy.businessModel && (
-                  <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <Target className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">Business Model</h3>
-                    </div>
-                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                      {startup.caseStudy.businessModel}
-                    </p>
-                  </div>
-                )}
-
-                {/* Early Growth */}
-                {startup.caseStudy.earlyGrowth && (
-                  <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">Early Growth</h3>
-                    </div>
-                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                      {startup.caseStudy.earlyGrowth}
-                    </p>
-                  </div>
-                )}
-
-                {/* Funding Journey */}
+                {/* Funding Journey (mono block) */}
                 {startup.caseStudy.fundingHistory && (
                   <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">Funding Journey</h3>
+                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-border">
+                      <DollarSign className="w-6 h-6 text-success" />
+                      <h3 className="text-xl font-display font-bold text-text-primary">Funding Journey</h3>
                     </div>
-                    <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-xl border border-slate-100 dark:border-slate-700">
-                      <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line font-mono text-sm">
+                    <div className="bg-surface-2 p-6 rounded-card border border-border">
+                      <p className="text-text-secondary leading-relaxed whitespace-pre-line font-data text-sm">
                         {startup.caseStudy.fundingHistory}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Scaling Phase */}
-                {startup.caseStudy.scalingPhase && (
-                  <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">The Scaling Phase</h3>
-                    </div>
-                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                      {startup.caseStudy.scalingPhase}
-                    </p>
-                  </div>
-                )}
-
-                {/* Warning Signs */}
-                {startup.caseStudy.warningSigns && (
-                  <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <AlertTriangle className="w-6 h-6 text-orange-500" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">The Warning Signs</h3>
-                    </div>
-                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                      {startup.caseStudy.warningSigns}
-                    </p>
-                  </div>
-                )}
-
-                {/* Critical Decisions */}
+                {/* Critical Decisions (highlight) */}
                 {startup.caseStudy.criticalDecisions && (
                   <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <Trophy className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">Critical Decisions</h3>
+                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-border">
+                      <Trophy className="w-6 h-6 text-warning" />
+                      <h3 className="text-xl font-display font-bold text-text-primary">Critical Decisions</h3>
                     </div>
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-xl border border-yellow-100 dark:border-yellow-700/30">
-                      <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                    <div className="bg-warning/5 p-6 rounded-card border border-warning/30">
+                      <p className="text-lg text-text-secondary leading-relaxed whitespace-pre-line">
                         {startup.caseStudy.criticalDecisions}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Collapse Sequence */}
-                {startup.caseStudy.collapseSequence && (
-                  <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <Skull className="w-6 h-6 text-red-600 dark:text-red-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">The Collapse</h3>
-                    </div>
-                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                      {startup.caseStudy.collapseSequence}
-                    </p>
-                  </div>
-                )}
-
-                {/* Failure Analysis */}
+                {/* Failure Analysis (highlight) */}
                 {startup.caseStudy.whyFailed && (
                   <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">Failure Analysis</h3>
+                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-border">
+                      <AlertTriangle className="w-6 h-6 text-danger" />
+                      <h3 className="text-xl font-display font-bold text-text-primary">Failure Analysis</h3>
                     </div>
-                    <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-8 rounded-xl border border-red-100 dark:border-red-700/30">
-                      <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line font-medium">
+                    <div className="bg-danger/5 p-8 rounded-card border border-danger/30">
+                      <p className="text-lg text-text-secondary leading-relaxed whitespace-pre-line font-medium">
                         {startup.caseStudy.whyFailed}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Founder Lessons */}
+                {/* Founder Lessons (highlight) */}
                 {startup.caseStudy.founderLessons && (
                   <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <Lightbulb className="w-6 h-6 text-amber-500" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">Founder Lessons</h3>
+                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-border">
+                      <Lightbulb className="w-6 h-6 text-warning" />
+                      <h3 className="text-xl font-display font-bold text-text-primary">Founder Lessons</h3>
                     </div>
-                    <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-8 rounded-xl border border-amber-100 dark:border-amber-700/30">
-                      <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                    <div className="bg-accent/5 p-8 rounded-card border border-accent/30">
+                      <p className="text-lg text-text-secondary leading-relaxed whitespace-pre-line">
                         {startup.caseStudy.founderLessons}
                       </p>
                     </div>
@@ -342,15 +282,15 @@ export default function StartupDetailPage() {
                 {/* Key Takeaways */}
                 {startup.caseStudy.keyTakeaways && (
                   <div>
-                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-white">Lessons Learned</h3>
+                    <div className="flex items-center gap-3 mb-4 pb-2 border-b border-border">
+                      <CheckCircle className="w-6 h-6 text-success" />
+                      <h3 className="text-xl font-display font-bold text-text-primary">Lessons Learned</h3>
                     </div>
                     <ul className="space-y-4">
                       {startup.caseStudy.keyTakeaways.map((takeaway, i) => (
                         <li key={i} className="flex items-start gap-4">
-                          <CheckCircle className="w-6 h-6 text-emerald-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed">
+                          <CheckCircle className="w-6 h-6 text-success mt-0.5 flex-shrink-0" />
+                          <span className="text-lg text-text-secondary leading-relaxed">
                             {takeaway}
                           </span>
                         </li>
@@ -366,15 +306,15 @@ export default function StartupDetailPage() {
         {/* Failure Reasons */}
         {startup.failureReasons?.length > 0 && (
           <section className="mb-16">
-            <div className="flex items-center gap-3 mb-8 pb-2 border-b border-slate-200 dark:border-slate-700">
-              <AlertTriangle className="w-7 h-7 text-amber-500" />
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Why They Failed</h2>
+            <div className="flex items-center gap-3 mb-8 pb-2 border-b border-border">
+              <AlertTriangle className="w-7 h-7 text-warning" />
+              <h2 className="text-2xl font-display font-bold text-text-primary">Why They Failed</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {startup.failureReasons.map((fr, i) => (
-                <div key={i} className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-6 rounded-xl border border-amber-100 dark:border-amber-800/30">
-                  <div className="font-bold text-amber-700 dark:text-amber-400 mb-3">{fr.category}</div>
-                  <div className="text-slate-700 dark:text-slate-300">{fr.description}</div>
+                <div key={i} className="bg-warning/5 p-6 rounded-card border border-warning/30">
+                  <div className="font-bold text-warning mb-3 capitalize">{fr.category}</div>
+                  <div className="text-text-secondary">{fr.description}</div>
                 </div>
               ))}
             </div>
@@ -383,34 +323,34 @@ export default function StartupDetailPage() {
 
         {/* External Research & Sources */}
         <section className="mb-16">
-          <div className="flex items-center gap-3 mb-8 pb-2 border-b border-slate-200 dark:border-slate-700">
-            <Search className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">External Research & Sources</h2>
+          <div className="flex items-center gap-3 mb-8 pb-2 border-b border-border">
+            <Search className="w-7 h-7 text-accent" />
+            <h2 className="text-2xl font-display font-bold text-text-primary">External Research &amp; Sources</h2>
           </div>
-          
+
           {sourcesLoading ? (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8">
+            <div className="pv-card p-8" role="status" aria-live="polite">
               <div className="text-center">
-                <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-slate-600 dark:text-slate-400">Searching web sources...</p>
+                <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-text-secondary">Searching web sources…</p>
               </div>
             </div>
           ) : externalSources.length > 0 ? (
             <div className="space-y-4">
               {externalSources.map((source, index) => (
-                <div key={index} className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-100 dark:border-slate-700 p-6 hover:shadow-lg transition-shadow">
+                <div key={index} className="pv-card-interactive p-6">
                   <a href={source.url} target="_blank" rel="noopener noreferrer" className="block">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-text-primary mb-2 flex items-center gap-2">
                           {source.title}
-                          <ExternalLink className="w-4 h-4 text-indigo-500" />
+                          <ExternalLink className="w-4 h-4 text-accent" />
                         </h3>
-                        <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 mb-3">
-                          <span className="font-medium text-indigo-600 dark:text-indigo-400">{source.publisher}</span>
+                        <div className="flex items-center gap-3 text-sm text-text-muted mb-3">
+                          <span className="font-medium text-accent">{source.publisher}</span>
                           {source.date && <span>• {new Date(source.date).toLocaleDateString()}</span>}
                         </div>
-                        <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                        <p className="text-text-secondary leading-relaxed">
                           {source.summary}
                         </p>
                       </div>
@@ -420,15 +360,15 @@ export default function StartupDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 text-center">
-              <Search className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600 dark:text-slate-400">No external sources found for this startup.</p>
+            <div className="pv-card p-8 text-center">
+              <Search className="w-12 h-12 text-text-muted mx-auto mb-4" />
+              <p className="text-text-secondary">No external sources found for this startup.</p>
             </div>
           )}
         </section>
 
         {/* Footer */}
-        <div className="text-center text-slate-500 dark:text-slate-400 text-sm pb-8">
+        <div className="text-center text-text-muted text-sm pb-8">
           <p>Data compiled from multiple public sources • Case studies are for educational purposes only</p>
         </div>
       </div>

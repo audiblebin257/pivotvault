@@ -38,7 +38,31 @@ realApi.interceptors.request.use((config) => {
 // Mock API handler
 const mockApiHandler = async (config) => {
   const { method, url, data } = config;
-  
+
+  // Mock /auth endpoints — keeps login/signup working in DEMO_MODE or when the
+  // backend is unreachable (e.g. a cold-started host). Without this, a failed
+  // /auth/login falls through to the default { success: true } response, which
+  // has no token/user, so the user is silently bounced back by ProtectedRoute.
+  if (url.includes('/auth')) {
+    const demoUser = {
+      id: 'demo-user',
+      name: 'Demo Founder',
+      email: 'founder@pivotvault.demo',
+    };
+    if (url.includes('/auth/me')) {
+      return { data: { user: demoUser } };
+    }
+    const body = data || {};
+    const email = body.email || demoUser.email;
+    const name = body.name || (email.includes('@') ? email.split('@')[0] : 'Founder');
+    return {
+      data: {
+        token: 'demo-token',
+        user: { ...demoUser, name, email },
+      },
+    };
+  }
+
   // Mock /quiz endpoint
   if (url.includes('/quiz')) {
     // Parse query parameters
@@ -177,7 +201,7 @@ const api = {
     try {
       return await realApi.get(url, config);
     } catch (err) {
-      console.warn('Backend unavailable, using mock data:', err);
+      if (import.meta.env.DEV) console.warn('Backend unavailable, using mock data:', err);
       return mockApiHandler({ method: 'get', url, ...config });
     }
   },
@@ -188,7 +212,7 @@ const api = {
     try {
       return await realApi.post(url, data, config);
     } catch (err) {
-      console.warn('Backend unavailable, using mock data:', err);
+      if (import.meta.env.DEV) console.warn('Backend unavailable, using mock data:', err);
       return mockApiHandler({ method: 'post', url, data, ...config });
     }
   },
@@ -199,7 +223,7 @@ const api = {
     try {
       return await realApi.put(url, data, config);
     } catch (err) {
-      console.warn('Backend unavailable, using mock data:', err);
+      if (import.meta.env.DEV) console.warn('Backend unavailable, using mock data:', err);
       return mockApiHandler({ method: 'put', url, data, ...config });
     }
   },
@@ -210,7 +234,7 @@ const api = {
     try {
       return await realApi.delete(url, config);
     } catch (err) {
-      console.warn('Backend unavailable, using mock data:', err);
+      if (import.meta.env.DEV) console.warn('Backend unavailable, using mock data:', err);
       return mockApiHandler({ method: 'delete', url, ...config });
     }
   }

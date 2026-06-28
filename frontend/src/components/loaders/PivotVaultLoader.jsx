@@ -34,7 +34,7 @@ const PivotVaultLoader = ({ customMessage }) => {
       {/* Crowd Animation */}
       <div className="absolute bottom-0 left-0 w-full h-[70vh]" style={{ transform: 'translateY(120px)' }}>
         <CrowdCanvas
-          src="/images/peeps/all-peeps.png"
+          src="/images/peeps/all-peeps.webp"
           rows={15}
           cols={7}
           className="h-full"

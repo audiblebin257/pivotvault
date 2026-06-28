@@ -5,15 +5,18 @@ import { Zap, AlertTriangle, CheckCircle2, ArrowRight, Loader2, Shuffle, Lightbu
 import api from '../lib/api';
 import PremiumRadarChart from '../components/PremiumRadarChart';
 import ConversationPanel from '../components/ui/ConversationPanel';
+import WorkspaceBar from '../components/WorkspaceBar';
+import { useWorkspace } from '../context/WorkspaceContext';
 
 const RiskScanner = () => {
+  const { profile, getSharedHistory, recordAnalysis } = useWorkspace();
   const [step, setStep] = React.useState('form'); // form | scanning | result
   const [formData, setFormData] = React.useState({
-    idea: '',
-    audience: '',
-    revenueModel: 'Subscription',
-    teamSize: '2',
-    industry: 'SaaS'
+    idea: profile.idea || '',
+    audience: profile.audience || '',
+    revenueModel: profile.businessModel || 'Subscription',
+    teamSize: profile.teamSize || '2',
+    industry: profile.industry || 'SaaS'
   });
   const [conversation, setConversation] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -43,8 +46,25 @@ const RiskScanner = () => {
     }, 800);
 
     try {
-      const response = await api.post('/ai/risk-scan', formData);
-      
+      const response = await api.post('/ai/risk-scan', {
+        ...formData,
+        history: getSharedHistory([], 'Risk Scanner'),
+      });
+
+      recordAnalysis({
+        tool: 'Risk Scanner',
+        riskScore: response.data.riskScore,
+        summary: response.data.consultantBrief?.split('\n').find(l => l.trim() && !l.startsWith('#'))?.trim()
+          || `Risk score ${response.data.riskScore}/100. Primary risk: ${response.data.primaryRisk}.`,
+        profilePatch: {
+          idea: formData.idea,
+          audience: formData.audience,
+          businessModel: formData.revenueModel,
+          teamSize: formData.teamSize,
+          industry: formData.industry,
+        },
+      });
+
       setConversation([
         {
           role: 'user',
@@ -52,7 +72,7 @@ const RiskScanner = () => {
         },
         {
           role: 'assistant',
-          content: "Here's your risk assessment report.",
+          content: response.data.consultantBrief || "Here's your risk assessment report.",
           fullResult: response.data
         }
       ]);
@@ -70,22 +90,24 @@ const RiskScanner = () => {
     }
   };
 
-  const handleFollowUp = async () => {
-    if (!query.trim()) return;
-    
+  const handleFollowUp = async (followUpText) => {
+    const question = (followUpText ?? query).trim();
+    if (!question) return;
+
     setLoading(true);
     const newHistory = conversation.map(msg => ({ role: msg.role, content: msg.content }));
 
     try {
       const response = await api.post('/ai/risk-scan', { 
         ...formData,
-        history: newHistory
+        history: getSharedHistory(newHistory, 'Risk Scanner'),
+        followUpQuestion: question
       });
 
       setConversation(prev => [
         ...prev,
-        { role: 'user', content: query },
-        { role: 'assistant', content: "Here's your updated assessment.", fullResult: response.data }
+        { role: 'user', content: question },
+        { role: 'assistant', content: response.data.consultantBrief || "Here's your updated assessment.", fullResult: response.data }
       ]);
       setQuery('');
     } catch (err) {
@@ -97,7 +119,7 @@ const RiskScanner = () => {
 
   const handleSuggestedFollowUp = (suggestedQuery) => {
     setQuery(suggestedQuery);
-    handleFollowUp();
+    handleFollowUp(suggestedQuery);
   };
 
   const handleSimulatePivot = (pivot, index) => {
@@ -163,16 +185,17 @@ const RiskScanner = () => {
   ] : radarData;
 
   const suggestedFollowUps = [
-    "Explain deeper",
-    "Show examples",
-    "Compare startups",
-    "Give recommendations",
-    "Generate action plan"
+    { label: "Explain deeper", prompt: "Explain the risk assessment above in more depth, with specific reasoning for each risk category." },
+    { label: "Show examples", prompt: "Show concrete examples of startups that failed due to the top risks identified above." },
+    { label: "Compare startups", prompt: "Compare my idea against the similar failed startups above and explain what I should do differently." },
+    { label: "Give recommendations", prompt: "Based on the risk assessment above, give specific, actionable recommendations to lower my risk score." },
+    { label: "Generate action plan", prompt: "Based on the risk assessment above, generate a concrete step-by-step action plan to mitigate the top risks." }
   ];
 
   return (
     <div className="min-h-screen bg-bg">
       <div className="pv-content-container py-12">
+        <WorkspaceBar />
         <AnimatePresence mode="wait">
           {step === 'form' && (
             <motion.div

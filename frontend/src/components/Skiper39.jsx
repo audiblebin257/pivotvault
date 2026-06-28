@@ -1,11 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { CrowdCanvas } from "./CrowdCanvas";
 
 const Skiper39 = () => {
-  useEffect(() => {
-    console.log("Skiper39 mounted");
-  }, []);
-
   return (
     <div className="relative h-full w-full bg-white text-black">
       <div className="top-22 absolute left-1/2 grid -translate-x-1/2 content-start justify-items-center gap-6 text-center text-black">

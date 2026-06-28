@@ -123,9 +123,11 @@ const Navbar = () => {
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 bg-surface-2/50 p-1 rounded-full border border-border/50">
               <button
+                type="button"
                 onClick={toggleTheme}
                 className="p-2.5 rounded-full text-text-secondary hover:text-accent hover:bg-surface-2 transition-all"
                 title="Toggle Mode"
+                aria-label="Toggle color theme"
               >
                 {theme === 'blue' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
               </button>
@@ -153,9 +155,11 @@ const Navbar = () => {
                   {user?.name?.split(' ')[0] || 'Founder'}
                 </Link>
                 <button 
+                  type="button"
                   onClick={logout} 
-                  className="p-2.5 rounded-full border border-border/50 bg-surface-2/50 text-text-secondary hover:text-red transition-all"
+                  className="p-2.5 rounded-full border border-border/50 bg-surface-2/50 text-text-secondary hover:text-danger transition-all"
                   title="Sign out"
+                  aria-label="Sign out"
                 >
                   <LogOut className="w-[18px] h-[18px]" />
                 </button>
@@ -171,7 +175,10 @@ const Navbar = () => {
 
             {/* Mobile Menu Toggle */}
             <button
+              type="button"
               onClick={() => setIsOpen(!isOpen)}
+              aria-label={isOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isOpen}
               className="xl:hidden ml-2 p-2.5 rounded-full bg-surface-2 border border-border/50 text-text-primary hover:text-accent transition-all"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -225,7 +232,7 @@ const Navbar = () => {
             <div className="p-8 border-t border-border/40 bg-surface-2/30 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <button onClick={toggleTheme} className="p-4 rounded-xl bg-bg border border-border/50">
+                  <button type="button" onClick={toggleTheme} aria-label="Toggle color theme" className="p-4 rounded-xl bg-bg border border-border/50">
                     {theme === 'blue' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
                   </button>
                   {isAuthed && (
@@ -235,7 +242,7 @@ const Navbar = () => {
                   )}
                 </div>
                 {!isAuthed && (
-                  <Link to="/login" onClick={() => setIsOpen(false)} className="pv-btn-primary h-control-lg rounded-xl px-8">
+                  <Link to="/login" onClick={() => setIsOpen(false)} className="pv-btn-primary rounded-xl px-8">
                     Get Started
                   </Link>
                 )}

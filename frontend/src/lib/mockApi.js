@@ -505,32 +505,77 @@ export const mockRiskScan = {
 };
 
 export const mockAiResponse = {
-  aiSummary: "Based on historical data, startups in this space often fail due to premature scaling and lack of product-market fit. Key lessons: validate demand before scaling, keep burn rate low, and focus on retention.",
+  aiSummary: `## FORENSIC DOSSIER: THE MORTALITY OF SCALING
+
+An analysis of our failure intelligence database reveals a sobering truth: **over 70% of high-profile startup failures are self-inflicted wounds, not market casualties.** When we dissect the remains of ventures like **Juicero** and **Quibi**, we find a recurring pathology: the attempt to manufacture consumer demand through sheer capital volume rather than organic product utility.
+
+### The Pathology of Blitzscaling
+
+The modern venture ecosystem often operates on a dangerous premise: that speed is the ultimate defensive moat. However, when applied to capital-intensive businesses, this "blitzscaling" model becomes a death sentence if the underlying unit economics are negative.
+
+| Failure Archetype | Key Metric Failure | Primary Casualty | Strategic Lesson |
+| --- | --- | --- | --- |
+| **Premature Scaling** | LTV/CAC < 1.0 | Webvan, Beepi | Solve unit economics before scaling |
+| **Founder Capture** | R&D Spend > Utility | Juicero, Theranos | Validate core value prop, not the hype |
+| **Subsidized Demand** | Contribution Margin < 0 | MoviePass | Negative-margin growth is not a strategy |
+
+### The Critical Inflection Points
+
+Our forensic algorithms identify three critical phases where startups seal their fate:
+1. **The Validation Illusion:** Relying on vanity metrics (app downloads, waitlist signups) instead of cohort retention.
+2. **The Capital Catalyst:** Raising mega-rounds that force the company to expand headcount and infrastructure ahead of product-market fit.
+3. **The Death Spiral:** Attempting to retroactively fix margins by degrading the user experience, leading to rapid churn and brand collapse.
+
+*For a detailed breakdown, explore the individual postmortems of Juicero, Theranos, and MoviePass.*`,
   timeline: [
-    { year: 2015, startup: 'Juicero', event: 'Launched with $120M funding' },
-    { year: 2017, startup: 'Juicero', event: 'Shut down after unit economics failed' }
+    { year: 2013, startup: 'Juicero', event: 'Founded with raw-food prophecy' },
+    { year: 2016, startup: 'Juicero', event: 'Launched $699 Wi-Fi press' },
+    { year: 2017, startup: 'Juicero', event: 'Bloomberg hand-squeeze video' },
+    { year: 2017, startup: 'Juicero', event: 'Sudden liquidation and collapse' }
   ],
   keyLessons: [
-    { lesson: 'Validate PMF first', details: 'Don\'t spend millions on production before proving customers want your product.' },
-    { lesson: 'Watch burn rate', details: 'High fixed costs can sink you fast if revenue doesn\'t match.' }
+    { lesson: 'The Hand-Squeeze Test', details: 'If your high-tech hardware can be bypassed by hand in 10 seconds, your value proposition is an illusion.' },
+    { lesson: 'LTV/CAC is the Law of Gravity', insight: 'No amount of brand excitement or celebrity backing can suspend the laws of unit economics. If you lose money on every transaction, scaling only accelerates your demise.' }
   ],
-  sources: ['juicero', 'theranos'],
-  relatedStartups: mockStartups.slice(0, 2)
+  sources: ['juicero', 'theranos', 'wework', 'quibi'],
+  relatedStartups: mockStartups.slice(0, 4)
 };
 
 export const mockPlaybook = {
-  summary: "Your idea has potential but needs rigorous validation. Focus on these key areas first.",
+  summary: `## THE FOUNDER PLAYBOOK: DE-RISKING THE ABYSS
+
+This playbook is a strategic diagnostic tool synthesized from the autopsies of 500+ failed ventures. It is designed to act as your operational guardrail, helping you navigate the delicate transition from validation to scale.
+
+### The Core Mandate: Validate or Die
+
+Most founders fail because they build a solution for a problem that does not exist. Your primary objective is to prove—with high-fidelity data—that your target audience has a painful, budget-allocated problem that your product solves uniquely.
+
+### The 90-Day Tactical Roadmap
+
+| Phase | Core Objective | Metric of Success |
+| --- | --- | --- |
+| **Discovery** | 50+ Customer Interviews | >80% problem resonance score |
+| **Validation** | Landing Page + Paid Deposit | >5% conversion rate on cold traffic |
+| **Fulfillment** | Manual MVP Delivery | >40% week-4 cohort retention |
+
+### The Death Traps to Avoid
+* **The Custom Build Trap:** Building custom software before validating demand with spreadsheets and manual workflows.
+* **The Marketing Subsidization:** Using paid ads to buy users before you have proven organic word-of-mouth referral loops.`,
   checklist: [
-    "Interview 50 target customers",
-    "Build a minimal viable product",
-    "Validate willingness to pay",
-    "Track retention metrics"
+    "Conduct 50+ qualitative interviews focusing on the user's current manual workarounds.",
+    "Build a high-fidelity landing page with a clear value proposition and a paid reservation hook.",
+    "Define your 'North Star' retention metric (e.g., weekly active usage) and instrument tracking.",
+    "Establish your baseline unit economics: calculate the exact cost of service delivery."
   ],
-  risks: ["No PMF", "Unit Economics", "Competition"],
+  risks: [
+    "Lack of validated demand: building a product based on assumptions.",
+    "Broken unit economics: high variable costs of fulfillment.",
+    "Incumbent displacement: underestimating the defensive moats of established players."
+  ],
   nextSteps: [
-    "Define your ideal customer profile",
-    "Create a landing page to test demand",
-    "Set up analytics from day one"
+    "Map your customer journey to identify the single most painful friction point.",
+    "Set up a simple Carrd landing page with a Stripe payment button for pre-orders.",
+    "Interview 5 potential users this week using the 'Mom Test' methodology."
   ]
 };
 

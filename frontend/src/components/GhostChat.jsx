@@ -61,10 +61,11 @@ const GhostChat = ({ startupSlug, startupName, autoOpen = false }) => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(true)}
+        aria-label={`Chat with the ghost of ${startupName}`}
         className="fixed bottom-8 right-8 w-16 h-16 bg-accent rounded-full flex items-center justify-center shadow-2xl z-50 border-4 border-bg group"
       >
-        <Ghost className="w-8 h-8 text-white group-hover:animate-pulse" />
-        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red rounded-full animate-ping" />
+        <Ghost className="w-8 h-8 text-accent-contrast group-hover:animate-pulse" />
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full animate-ping" />
       </motion.button>
 
       {/* Chat Window */}
@@ -79,13 +80,13 @@ const GhostChat = ({ startupSlug, startupName, autoOpen = false }) => {
             {/* Header */}
             <div className="p-4 bg-accent/10 border-b border-accent/20 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-danger animate-pulse" />
                 <div className="text-xs font-data font-bold text-accent uppercase tracking-widest flex items-center gap-2">
                   <Terminal className="w-3 h-3" />
                   Ghost of {startupName}
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-text-muted hover:text-white">
+              <button type="button" onClick={() => setIsOpen(false)} aria-label="Close chat" className="text-text-muted hover:text-text-primary transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -133,7 +134,8 @@ const GhostChat = ({ startupSlug, startupName, autoOpen = false }) => {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center text-white disabled:opacity-50"
+                aria-label="Send message"
+                className="pv-btn-primary pv-btn-icon"
               >
                 <Send className="w-4 h-4" />
               </button>

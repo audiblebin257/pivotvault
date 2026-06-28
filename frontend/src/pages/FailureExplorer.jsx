@@ -3,9 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Filter, X, SlidersHorizontal, ArrowUpDown, ChevronDown, AlertTriangle } from 'lucide-react';
 import StartupCard from '../components/StartupCard';
 import SearchInput from '../components/ui/SearchInput';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import api from '../lib/api';
 
 const FailureExplorer = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,13 +24,13 @@ const FailureExplorer = () => {
     const fetchStartups = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${API_URL}/api/startups`, {
+        const response = await api.get('/startups', {
           params: Object.fromEntries(searchParams)
         });
-        setStartups(response.data.data);
-        setTotal(response.data.total);
+        setStartups(response.data.data || []);
+        setTotal(response.data.total || 0);
       } catch (err) {
-        console.error('Fetch error:', err);
+        if (import.meta.env.DEV) console.error('Fetch error:', err);
       } finally {
         setLoading(false);
       }
@@ -93,7 +91,7 @@ const FailureExplorer = () => {
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Industry</label>
         <select 
-          className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
+          className="pv-field"
           value={industry}
           onChange={(e) => handleFilterChange('industry', e.target.value)}
         >
@@ -108,7 +106,7 @@ const FailureExplorer = () => {
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Status</label>
         <select 
-          className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
+          className="pv-field"
           value={status}
           onChange={(e) => handleFilterChange('status', e.target.value)}
         >
@@ -124,7 +122,7 @@ const FailureExplorer = () => {
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Failure Mode</label>
         <select 
-          className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
+          className="pv-field"
           value={category}
           onChange={(e) => handleFilterChange('category', e.target.value)}
         >
@@ -139,7 +137,7 @@ const FailureExplorer = () => {
       <div className="space-y-2">
         <label className="text-label uppercase text-text-secondary">Country</label>
         <select 
-          className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
+          className="pv-field"
           value={country}
           onChange={(e) => handleFilterChange('country', e.target.value)}
         >
@@ -155,7 +153,7 @@ const FailureExplorer = () => {
         <label className="text-label uppercase text-text-secondary">Sort By</label>
         <div className="grid grid-cols-2 gap-2">
           <select 
-            className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
+            className="pv-field"
             value={sort}
             onChange={(e) => handleFilterChange('sort', e.target.value)}
           >
@@ -165,7 +163,7 @@ const FailureExplorer = () => {
             <option value="users">Peak Users</option>
           </select>
           <select 
-            className="w-full bg-surface-2 border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent text-text-primary appearance-none"
+            className="pv-field"
             value={order}
             onChange={(e) => handleFilterChange('order', e.target.value)}
           >
@@ -194,7 +192,7 @@ const FailureExplorer = () => {
             />
             <button
               onClick={() => setShowMobileFilters(true)}
-              className="sm:hidden flex items-center justify-center gap-2 bg-surface border border-border px-4 py-3 rounded-md text-text-primary font-medium hover:bg-surface-2"
+              className="sm:hidden pv-btn-secondary flex items-center justify-center gap-2"
             >
               <Filter className="w-5 h-5" />
               Filters
@@ -229,7 +227,41 @@ const FailureExplorer = () => {
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="h-72 pv-card animate-pulse bg-surface-2" />
+                  <div key={i} className="pv-card p-6 h-full flex flex-col animate-pulse">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-lg bg-surface-2 border border-border" />
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="w-6 h-6 rounded-full bg-surface-2" />
+                        <div className="w-16 h-5 rounded-md bg-surface-2" />
+                      </div>
+                    </div>
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col">
+                      <div className="w-3/4 h-6 rounded bg-surface-2 mb-2" />
+                      <div className="w-1/3 h-4 rounded bg-surface-2 mb-4" />
+                      <div className="space-y-2 mb-6">
+                        <div className="w-full h-3.5 rounded bg-surface-2" />
+                        <div className="w-full h-3.5 rounded bg-surface-2" />
+                        <div className="w-5/6 h-3.5 rounded bg-surface-2" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 py-3 border-y border-border/80 bg-surface-2/40 px-3 rounded-md mb-4">
+                        <div>
+                          <div className="w-16 h-3 rounded bg-surface-2 mb-1.5" />
+                          <div className="w-20 h-4 rounded bg-surface-2" />
+                        </div>
+                        <div>
+                          <div className="w-16 h-3 rounded bg-surface-2 mb-1.5" />
+                          <div className="w-12 h-4 rounded bg-surface-2" />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="w-32 h-4 rounded bg-surface-2" />
+                      <div className="w-4 h-4 rounded bg-surface-2" />
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : startups.length > 0 ? (

@@ -21,7 +21,7 @@ const quizRoutes = require('./routes/quiz');
 const prisma = new PrismaClient();
 const app = express();
 app.set('trust proxy', 1);
-// new added link 
+
 // Middleware
 app.use(helmet());
 app.use(cors({
