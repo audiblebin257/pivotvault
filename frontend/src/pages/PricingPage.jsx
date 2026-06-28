@@ -6,20 +6,15 @@ import { usePricingStore } from '../store/usePricingStore';
 const PricingPage = () => {
   const { billingPeriod, setBillingPeriod } = usePricingStore();
 
-  // Price calculations based on period
-  const getPrice = (basePrice) => {
-    if (billingPeriod === 'annual') {
-      return Math.round(basePrice * 0.8); // 20% discount
-    }
-    return basePrice;
-  };
-
   // Pricing plans definition
   const plans = [
     {
       name: 'Scout',
       eyebrow: 'FOUNDER SEED',
       price: 0,
+      priceAnnual: 0,
+      usdEquiv: 0,
+      usdEquivAnnual: 0,
       description: 'Essential failure archives and pattern-matching for early-stage validation.',
       features: [
         'Access to core failure archives',
@@ -34,7 +29,10 @@ const PricingPage = () => {
     {
       name: 'Operator',
       eyebrow: 'GROWTH LAYER',
-      price: 49,
+      price: 1499,
+      priceAnnual: 999,
+      usdEquiv: 18,
+      usdEquivAnnual: 12,
       description: 'Comprehensive research, unlimited AI scans, and pitch deck risk audits.',
       features: [
         'Full postmortem database access',
@@ -50,7 +48,10 @@ const PricingPage = () => {
     {
       name: 'Vault',
       eyebrow: 'ENTERPRISE SHIELD',
-      price: 199,
+      price: 4999,
+      priceAnnual: 3999,
+      usdEquiv: 60,
+      usdEquivAnnual: 48,
       description: 'Custom risk modeling, dedicated AI analysts, and competitor benchmarks.',
       features: [
         'Dedicated AI Risk Model training',
@@ -127,7 +128,7 @@ const PricingPage = () => {
             <span className={`text-sm flex items-center gap-1.5 ${billingPeriod === 'annual' ? 'text-text-primary font-semibold' : 'text-text-muted'}`}>
               Annual
               <span className="text-[10px] font-data font-bold bg-accent/20 text-accent border border-accent/30 px-1.5 py-0.5 rounded uppercase">
-                Save 20%
+                Up to 33% Off
               </span>
             </span>
           </div>
@@ -141,7 +142,8 @@ const PricingPage = () => {
           className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch"
         >
           {plans.map((plan) => {
-            const displayPrice = getPrice(plan.price);
+            const displayPrice = billingPeriod === 'annual' ? plan.priceAnnual : plan.price;
+            const displayUsd = billingPeriod === 'annual' ? plan.usdEquivAnnual : plan.usdEquiv;
             const planBorder = plan.featured 
               ? 'border-2 border-accent shadow-elevated' 
               : 'border border-border';
@@ -174,13 +176,20 @@ const PricingPage = () => {
                   </div>
 
                   {/* Price */}
-                  <div className="mb-6 flex items-baseline gap-1">
-                    <span className="font-data text-4xl sm:text-5xl font-extrabold text-text-primary">
-                      ${displayPrice}
-                    </span>
-                    <span className="font-data text-xs text-text-muted">
-                      {plan.price === 0 ? '' : `/mo`}
-                    </span>
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="font-data text-4xl sm:text-5xl font-extrabold text-text-primary">
+                        {plan.price === 0 ? 'Free' : `₹${displayPrice.toLocaleString('en-IN')}`}
+                      </span>
+                      <span className="font-data text-xs text-text-muted">
+                        {plan.price === 0 ? '' : `/mo`}
+                      </span>
+                    </div>
+                    {plan.price > 0 && (
+                      <span className="font-data text-[10px] text-text-muted mt-1 block">
+                        ~${displayUsd}/mo equivalent
+                      </span>
+                    )}
                   </div>
 
                   {/* Description */}
