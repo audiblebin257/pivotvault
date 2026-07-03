@@ -17,6 +17,7 @@ function serializeStartup(s) {
     shutdownYear: s.shutdownYear,
     lifetimeMonths: s.lifetimeMonths,
     fundingInr: s.fundingInr != null ? s.fundingInr.toString() : null,
+    fundingUsd: s.fundingUsd != null ? s.fundingUsd.toString() : null,
     peakUsers: s.peakUsers,
     topFailureReason: s.failureReasons && s.failureReasons[0] ? s.failureReasons[0].category : null,
   };
@@ -29,14 +30,14 @@ router.get('/', requireAuth, async (req, res) => {
       where: { userId: req.user.id },
       orderBy: { createdAt: 'desc' },
     });
-    const startupIds = bookmarks.map((b) => b.startupId);
-    const startups = await prisma.startup.findMany({
-      where: { id: { in: startupIds } },
+    const companyIds = bookmarks.map((b) => b.companyId);
+    const companies = await prisma.company.findMany({
+      where: { id: { in: companyIds } },
       include: { failureReasons: { where: { isPrimary: true }, take: 1 } },
     });
-    const byId = new Map(startups.map((s) => [s.id, s]));
-    const ordered = startupIds.map((id) => byId.get(id)).filter(Boolean).map(serializeStartup);
-    res.json({ slugs: startups.map((s) => s.slug), data: ordered });
+    const byId = new Map(companies.map((s) => [s.id, s]));
+    const ordered = companyIds.map((id) => byId.get(id)).filter(Boolean).map(serializeStartup);
+    res.json({ slugs: companies.map((s) => s.slug), data: ordered });
   } catch (err) {
     console.error('List bookmarks error:', err);
     res.status(500).json({ error: 'Could not load bookmarks', code: 'INTERNAL_ERROR' });
@@ -48,12 +49,12 @@ router.post('/', requireAuth, async (req, res) => {
   try {
     const { slug } = req.body || {};
     if (!slug) return res.status(400).json({ error: 'slug is required', code: 'VALIDATION_ERROR' });
-    const startup = await prisma.startup.findUnique({ where: { slug } });
+    const startup = await prisma.company.findUnique({ where: { slug } });
     if (!startup) return res.status(404).json({ error: 'Startup not found', code: 'NOT_FOUND' });
     await prisma.bookmark.upsert({
-      where: { userId_startupId: { userId: req.user.id, startupId: startup.id } },
+      where: { userId_companyId: { userId: req.user.id, companyId: startup.id } },
       update: {},
-      create: { userId: req.user.id, startupId: startup.id },
+      create: { userId: req.user.id, companyId: startup.id },
     });
     res.status(201).json({ ok: true, slug });
   } catch (err) {
@@ -65,9 +66,9 @@ router.post('/', requireAuth, async (req, res) => {
 // DELETE /api/bookmarks/:slug - remove a bookmark
 router.delete('/:slug', requireAuth, async (req, res) => {
   try {
-    const startup = await prisma.startup.findUnique({ where: { slug: req.params.slug } });
+    const startup = await prisma.company.findUnique({ where: { slug: req.params.slug } });
     if (!startup) return res.status(404).json({ error: 'Startup not found', code: 'NOT_FOUND' });
-    await prisma.bookmark.deleteMany({ where: { userId: req.user.id, startupId: startup.id } });
+    await prisma.bookmark.deleteMany({ where: { userId: req.user.id, companyId: startup.id } });
     res.json({ ok: true, slug: req.params.slug });
   } catch (err) {
     console.error('Delete bookmark error:', err);

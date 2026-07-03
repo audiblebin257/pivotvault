@@ -1,4 +1,4 @@
-> Last updated: 2026-06-28 | Always update this file after every session.
+> Last updated: 2026-07-03 | Always update this file after every session.
 
 # Project Memory
 
@@ -46,6 +46,7 @@
 | `/graph` | KnowledgeGraph | no |
 | `/confessions` | ConfessionWall | no |
 | `/insights` | InsightsDashboard | no |
+| `/financials` | FinancialIntelligence | no |
 | `/assistant` | AiAssistant | yes |
 | `/bookmarks` | BookmarksPage | yes |
 | `/history` | HistoryPage | yes |
@@ -58,12 +59,15 @@
 All page components are lazy-loaded via `React.lazy` and wrapped in Suspense.
 
 ### Backend (`backend/src/`)
-- **`index.js`** — Express app entry. Middleware: helmet, CORS (allowlist function), morgan, `express.json({ limit: '10kb' })`, global rate limiter (200 req / 15 min on `/api/`). Health check at `GET /api/health`.
-- **`routes/`** — `{ai, auth, bookmarks, confessions, graph, insights, quiz, startups}.js`. (`rss.js` and `feedback.js` exist but are commented out / disabled.)
+- **`index.js`** — Express app entry. Middleware: helmet, CORS (allowlist function), morgan, `express.json({ limit: '10kb' })`, global rate limiter (200 req / 15 min on `/api/`). Health check at `GET /api/health`. Also starts SEC EDGAR incremental sync scheduler at boot.
+- **`routes/`** — `{ai, auth, bookmarks, confessions, graph, insights, quiz, startups, sec}.js`. (`rss.js` and `feedback.js` exist but are commented out / disabled.)
 - **`routes/ai.js`** — risk-scan, research, playbook, autopsy, compare endpoints with a shared "consultant brief" markdown contract and graceful no-AI fallbacks.
+- **`routes/sec.js`** — SEC EDGAR lookup, sync, company/filing/financial/risk retrieval, filing intelligence, RAG search/ask, and **`GET /api/sec/dashboard`** aggregated financial intelligence for multi-company compare/export.
+- **`routes/companies.js`** — On-demand company search/import/cache: **`GET /api/companies/search`**, **`POST /api/companies/import`**, **`GET /api/companies/status/:id`**, **`POST /api/companies/refresh/:id`**. Orchestrator in `services/companyImport/`.
 - **`services/searchService.js`** — Tavily web search.
+- **`services/sec/`** — Modular SEC EDGAR integration: `secClient` (rate-limited HTTP), `companyLookup` (fuzzy name/ticker/CIK resolution), `filingFetcher` (incremental metadata sync), `filingParser` (HTML→text sectioning), `financialExtractor` (XBRL→structured financials), `riskExtractor` (Item 1A risk-factor tagging), `cache`, `scheduler` (daily cron sync), and `index.js` facade.
 - **`middleware/auth.js`** — JWT bearer-token auth.
-- **`prisma/`** — `schema.prisma`, migrations, `seed.js`.
+- **`prisma/`** — `schema.prisma`, migrations, `seed.js`. Includes SEC tables: `sec_companies`, `sec_filings`, `sec_documents`, `sec_financials`, `sec_risk_factors`, `sec_metadata`.
 
 ---
 
@@ -71,6 +75,9 @@ All page components are lazy-loaded via `React.lazy` and wrapped in Suspense.
 
 - **Working:** Full SPA with all routes; frontend builds and runs. api.js mock-fallback keeps the UI functional even with the backend down. Auth, bookmarks, quiz, AI routes, graph, confessions, insights wired up.
 - **In progress:** Workspace feature (new `WorkspaceContext`, `WorkspaceBar`, `TopBar`, `onboarding/`) — uncommitted, recently added. Production-readiness audit (Session 2) was underway.
+- **SEC EDGAR Integration (Phase 1):** Backend module is fully implemented (`backend/src/services/sec/`) with company lookup, filing fetcher, XBRL financial extractor, risk-factor extractor, incremental sync scheduler, and REST routes (`/api/sec/*`). Prisma client regenerated and database migration created. Pending deployment to apply migration SQL to the production database.
+- **Financial Intelligence Dashboard (V2):** Frontend page at `/financials` with SEC-backed revenue/profit/burn/debt/assets/liabilities charts, risk factors, ratios, key metrics, filing timeline, major events, multi-company compare (up to 4), CSV/JSON export, and 45s auto-refresh when new filings sync. Backend aggregator in `backend/src/services/sec/dashboardService.js`. Mock fallback in `frontend/src/lib/secDashboardMock.js`.
+- **On-Demand Company Import (V2):** `GET /api/companies/search?q=Tesla` checks PostgreSQL first; if missing, auto-runs SEC resolve → sync (10-K/10-Q/8-K/S-1) → parse → AI extraction → Company profile → embeddings → knowledge graph. Cache statuses: NEW/PROCESSING/READY/FAILED/UPDATING on `company_import_jobs`. Weekly refresh cron (Sundays 04:00 UTC). Tavily web fallback if SEC has no data. Progress events streamed on import job record.
 - **Backend often not running locally** → app falls back to mock data (expected; you'll see dev-only "Backend unavailable, using mock data" + `ERR_CONNECTION_REFUSED`).
 
 ---
@@ -150,6 +157,69 @@ cd backend && npm install
 ## Session History
 
 > Append newest entries at the **top**. Each entry: date, model, summary, files, verification, follow-ups.
+
+### Session 11 — 2026-07-03 — On-Demand Company Import Pipeline (model: Composer)
+- **Summary:** Implemented automatic search → import → analyze → cache workflow for public companies. PostgreSQL hit returns instantly; missing companies trigger full SEC + AI pipeline with deduplication, progress events, cache statuses, retries, and weekly refresh.
+- **Key Changes:**
+  - Added `CompanyCacheStatus` enum and `CompanyImportJob` model + migration `20260703120000_add_company_import_jobs`.
+  - Created `backend/src/services/companyImport/` (orchestrator, profileBuilder, weekly scheduler).
+  - Pipeline: resolve CIK/ticker → SEC sync (filings, financials, risk, intelligence, RAG) → AI extraction (KnowledgeExtractor) → persist Company/founders/timeline/lessons/competitors/products → graph edges → document embeddings (lazy, optional).
+  - Tavily web fallback when SEC resolution fails — request never hard-fails.
+  - APIs: `GET /api/companies/search`, `POST /api/companies/import`, `GET /api/companies/status/:id`, `POST /api/companies/refresh/:id`.
+  - Weekly refresh via `registerWeeklyRefresh()` in `index.js` (default `0 4 * * 0`).
+  - Mock handlers for `/companies/*` in `frontend/src/lib/api.js`.
+- **Files:** `backend/prisma/schema.prisma`, `backend/prisma/migrations/20260703120000_add_company_import_jobs/migration.sql`, `backend/src/services/companyImport/*`, `backend/src/routes/companies.js`, `backend/src/index.js`, `backend/.env.example`, `frontend/src/lib/api.js`, `memory.md`.
+- **Verification:** `npx prisma validate` passed. `node --check` on import service/routes. `require('./src/services/companyImport')` loads cleanly (rag lazy-loaded to avoid langchain import issue).
+- **Follow-up:** Apply migration to production DB. Wire Financial Intelligence page company search to `/api/companies/search` for live on-demand imports.
+
+### Session 10 — 2026-07-03 — Financial Intelligence Dashboard V2 (model: Composer)
+- **Summary:** Built PivotVault V2 Financial Intelligence Dashboard powered by SEC EDGAR data — multi-company compare, founder/investor briefs, full chart suite, export, and auto-refresh on new filings.
+- **Key Changes:**
+  - Added `backend/src/services/sec/dashboardService.js` to aggregate trends (revenue, profit, cash burn, debt, assets, liabilities), financial ratios, risk summaries, filing timeline, major events, key metrics, and founder insights from stored SEC data.
+  - Added `GET /api/sec/dashboard?ciks=AAPL,MSFT` route and wired `secService.getDashboard()`.
+  - Created `frontend/src/pages/FinancialIntelligence.jsx` at `/financials` with Recharts visualizations, SEC company search, up-to-4 company comparison, CSV/JSON export, and 45s polling on `meta.dataVersion`.
+  - Added `frontend/src/lib/secDashboardMock.js` + mock handlers in `api.js` for offline/demo use (Apple vs Microsoft sample data).
+  - Added sidebar nav item "Financial Intelligence" and lazy route in `App.jsx`.
+- **Files:** `backend/src/services/sec/dashboardService.js`, `backend/src/services/sec/index.js`, `backend/src/routes/sec.js`, `frontend/src/pages/FinancialIntelligence.jsx`, `frontend/src/lib/secDashboardMock.js`, `frontend/src/lib/api.js`, `frontend/src/App.jsx`, `frontend/src/components/Sidebar.jsx`, `memory.md`.
+- **Verification:** `npm run build` in `frontend/` clean (22.78s). `node --check` on dashboard service and sec routes.
+- **Follow-up:** Sync real companies via `POST /api/sec/sync/AAPL` after DB migration; dashboard auto-updates when scheduler imports new filings.
+
+### Session 9 — 2026-07-03 — SEC RAG Integration (model: GPT-5 Codex)
+- **Summary:** Added SEC filing RAG so downloaded filings can become searchable, semantically queryable evidence. Implemented filing section chunking, Gemini `text-embedding-004` embeddings, pgvector storage/indexing, metadata-rich citations, semantic search, and evidence-only SEC Q&A.
+- **Key Changes:**
+  - Added `SecFilingChunk` Prisma model and migration `backend/prisma/migrations/20260703010000_add_sec_rag_chunks/migration.sql` with `vector(768)`, HNSW cosine index, metadata GIN index, and content full-text index.
+  - Created `backend/src/services/sec/secRagService.js` for SEC filing chunking, embedding, indexing, semantic search, and extractive answer generation that refuses to answer when no filing evidence is found.
+  - Wired SEC RAG into `backend/src/services/sec/index.js` and the SEC scheduler, with `rag` indexing enabled by default during SEC sync.
+  - Added `/api/sec/search`, `/api/sec/ask`, `/api/sec/filings/:filingId/search-index`, and `/api/sec/companies/:cik/search-index`.
+  - Search/answer results include SEC filing accession, filing date, section, confidence, citation, page number placeholder, URL, and company metadata.
+- **Files:** `backend/prisma/schema.prisma`, `backend/prisma/migrations/20260703010000_add_sec_rag_chunks/migration.sql`, `backend/src/services/sec/secRagService.js`, `backend/src/services/sec/index.js`, `backend/src/services/sec/scheduler.js`, `backend/src/routes/sec.js`, `memory.md`.
+- **Verification:** `node --check` passed for SEC RAG, SEC service, scheduler, and routes. `npx prisma validate` passed. `require('./backend/src/services/sec/secRagService')`, `require('./backend/src/services/sec')`, and `require('./backend/src/routes/sec')` load cleanly. `git diff --check` still reports the pre-existing trailing whitespace in `frontend/src/pages/KnowledgeGraph.jsx`.
+- **Follow-up:** Apply migrations to the target database, ensure `GEMINI_API_KEY` is configured, then run `POST /api/sec/companies/:cik/search-index` or SEC sync with `rag: true` to populate chunks before using `/api/sec/search` and `/api/sec/ask`.
+
+### Session 8 — 2026-07-03 — SEC Filing Intelligence V2 (model: GPT-5 Codex)
+- **Summary:** Extended the SEC EDGAR integration from filing download/metadata into deterministic, source-backed startup intelligence. Added extraction for required filing intelligence fields, including financial facts from XBRL and prose fields from SEC filing sections, plus generated PivotVault health insights and scores.
+- **Key Changes:**
+  - Expanded `backend/src/services/sec/filingIntelligenceExtractor.js` to extract revenue, expenses, cash, net income, debt, assets, employees, risk factors, legal proceedings, competition, management discussion, business overview, market risks, growth strategy, operational challenges, and financial risks.
+  - Every extracted field is stored with confidence, source, citation text, page number placeholder (`null` when EDGAR HTML has no recoverable page), and section key; missing fields are omitted/null rather than inferred.
+  - Added deterministic executive summary and health scoring: financial health, business health, operational risk, market risk, leadership risk, funding risk, and overall company health.
+  - Expanded XBRL concept coverage in `financialExtractor.js` for expenses, debt, and additional revenue concepts.
+  - Wired intelligence extraction into `SecService`, the SEC scheduler, and `/api/sec` routes for company-level and filing-level extraction/retrieval.
+  - Added migration `backend/prisma/migrations/20260703000000_add_sec_filing_intelligence/migration.sql` for extracts, citations, and intelligence tables.
+- **Files:** `backend/src/services/sec/filingIntelligenceExtractor.js`, `backend/src/services/sec/financialExtractor.js`, `backend/src/services/sec/index.js`, `backend/src/services/sec/scheduler.js`, `backend/src/routes/sec.js`, `backend/prisma/migrations/20260703000000_add_sec_filing_intelligence/migration.sql`, `memory.md`.
+- **Verification:** `node --check` passed for edited SEC service/route files. `npx prisma validate` passed. `require('./backend/src/services/sec')` and `require('./backend/src/routes/sec')` both load cleanly. `git diff --check` still reports a pre-existing trailing whitespace issue in `frontend/src/pages/KnowledgeGraph.jsx`, unrelated to this SEC work.
+- **Follow-up:** Apply Prisma migrations in the target database. Run a real SEC sync/extract against a known company after database migration to populate the new intelligence tables and inspect citations.
+
+### Session 7 — 2026-06-28 — SEC EDGAR Integration Phase 1 (model: Kimi Work)
+- **Summary:** Integrated the official SEC EDGAR system into PivotVault for enriching public company profiles with official filing data. The module was already partially implemented in a prior session; this session completed the integration by regenerating the Prisma client, creating the database migration, and verifying all components load correctly.
+- **Key Changes:**
+  - **Regenerated Prisma Client** to include SEC models (`SecCompany`, `SecFiling`, `SecDocument`, `SecFinancial`, `SecRiskFactor`, `SecMetadata`) after schema changes were present but the client was stale.
+  - **Created database migration** `backend/prisma/migrations/20250628000000_add_sec_edgar_tables/migration.sql` with all SEC tables, indexes, foreign keys, and the `SecFilingType` PostgreSQL enum.
+  - **Created `backend/.env.example`** documenting SEC-specific environment variables: `SEC_USER_AGENT`, `SEC_SYNC_ENABLED`, `SEC_SYNC_CRON`.
+  - **Verified module integrity:** All 9 SEC service files (`secClient`, `cache`, `util`, `companyLookup`, `filingFetcher`, `filingParser`, `financialExtractor`, `riskExtractor`, `scheduler`) and the `routes/sec.js` router load without errors.
+  - **Confirmed backend wiring:** `backend/src/index.js` already imports `secService`, registers `/api/sec` routes, and starts the daily incremental sync scheduler at boot (02:30 UTC default, override via `SEC_SYNC_CRON`).
+- **Files:** `backend/prisma/migrations/20250628000000_add_sec_edgar_tables/migration.sql`, `backend/.env.example`, `memory.md`.
+- **Verification:** Prisma schema validation passes (`prisma validate`). Prisma client generation succeeds and exposes all 6 SEC models. All SEC modules require cleanly in Node.js. Backend startup failure is a **pre-existing** `langchain/text_splitter` import issue in `rag.js`, unrelated to SEC.
+- **Follow-up:** Apply the migration SQL to the production Railway database (`npx prisma migrate deploy` or run the SQL directly). Once deployed, test the API endpoints: `POST /api/sec/sync/:identifier`, `GET /api/sec/lookup?q=Apple`, `GET /api/sec/companies/:cik/filings`. Consider adding frontend UI for SEC data visualization in a future phase.
 
 ### Session 6 — 2026-06-28 — Hackathon Audit & Optimizations (model: Antigravity)
 - **Summary:** Conducted a comprehensive production optimization audit and finalized bug fixes for AI follow-ups, loading experiences, and the mathematical Failure Index to prepare PivotVault for the national hackathon.

@@ -8,6 +8,7 @@ import {
   getStartupBySlug,
   generateMockExternalSources
 } from './mockApi';
+import { getMockSecDashboard, mockSecLookup } from './secDashboardMock';
 import { getRandomQuestions } from './quizData';
 
 export const API_URL =
@@ -188,6 +189,70 @@ const mockApiHandler = async (config) => {
     };
   }
   
+  // Mock /sec endpoints (Financial Intelligence dashboard)
+  if (url.includes('/sec/dashboard')) {
+    const urlObj = new URL(url, 'http://localhost');
+    const ciks = urlObj.searchParams.get('ciks') || urlObj.searchParams.get('compare') || 'AAPL,MSFT';
+    const ids = ciks.split(',').map((s) => s.trim()).filter(Boolean);
+    return { data: getMockSecDashboard(ids) };
+  }
+  if (url.includes('/sec/lookup')) {
+    const urlObj = new URL(url, 'http://localhost');
+    const q = urlObj.searchParams.get('q') || '';
+    const matches = mockSecLookup(q);
+    if (matches.length === 1) return { data: matches[0] };
+    return { data: { matches } };
+  }
+
+  if (url.includes('/companies/search')) {
+    const urlObj = new URL(url, 'http://localhost');
+    const q = urlObj.searchParams.get('q') || 'Tesla';
+    const dashboard = getMockSecDashboard([q, 'MSFT']);
+    const primary = dashboard.companies[0];
+    return {
+      data: {
+        found: true,
+        cached: true,
+        status: 'READY',
+        companyId: primary.company.id,
+        slug: primary.company.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        profile: {
+          company: primary.company,
+          revenue: primary.keyMetrics?.revenue,
+          cash: primary.keyMetrics?.cash,
+          financialHealth: primary.intelligence?.scores,
+          riskFactors: primary.riskFactors?.topRisks,
+          timeline: primary.timeline,
+          lessons: primary.founderInsights,
+          cachedAt: new Date().toISOString(),
+        },
+        job: {
+          id: 'demo-import-job',
+          status: 'READY',
+          progress: [
+            { step: 'searching_sec', message: 'Searching SEC...', at: new Date().toISOString() },
+            { step: 'complete', message: 'Complete.', at: new Date().toISOString() },
+          ],
+        },
+      },
+    };
+  }
+
+  if (url.includes('/companies/status/')) {
+    return {
+      data: {
+        id: 'demo-import-job',
+        status: 'READY',
+        currentStep: 'complete',
+        progress: [{ step: 'complete', message: 'Complete.', at: new Date().toISOString() }],
+      },
+    };
+  }
+
+  if (url.includes('/companies/import')) {
+    return mockApiHandler({ method: 'get', url: '/companies/search?q=Tesla' });
+  }
+
   // Default mock response
   return { data: { success: true } };
 };

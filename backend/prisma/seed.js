@@ -8,7 +8,7 @@ async function main() {
   // STARTUPS
   // ─────────────────────────────────────────────
 
-  const quibi = await prisma.startup.upsert({
+  const quibi = await prisma.company.upsert({
     where: { slug: 'quibi' },
     update: {},
     create: {
@@ -65,7 +65,7 @@ async function main() {
     },
   });
 
-  const juicero = await prisma.startup.upsert({
+  const juicero = await prisma.company.upsert({
     where: { slug: 'juicero' },
     update: {},
     create: {
@@ -114,7 +114,7 @@ async function main() {
     },
   });
 
-  const theranos = await prisma.startup.upsert({
+  const theranos = await prisma.company.upsert({
     where: { slug: 'theranos' },
     update: {},
     create: {
@@ -164,7 +164,7 @@ async function main() {
     },
   });
 
-  const petsDotCom = await prisma.startup.upsert({
+  const petsDotCom = await prisma.company.upsert({
     where: { slug: 'pets-com' },
     update: {},
     create: {
@@ -213,7 +213,7 @@ async function main() {
     },
   });
 
-  const webvan = await prisma.startup.upsert({
+  const webvan = await prisma.company.upsert({
     where: { slug: 'webvan' },
     update: {},
     create: {
@@ -263,7 +263,7 @@ async function main() {
     },
   });
 
-  const moviepass = await prisma.startup.upsert({
+  const moviepass = await prisma.company.upsert({
     where: { slug: 'moviepass' },
     update: {},
     create: {
@@ -313,7 +313,7 @@ async function main() {
     },
   });
 
-  const beepi = await prisma.startup.upsert({
+  const beepi = await prisma.company.upsert({
     where: { slug: 'beepi' },
     update: {},
     create: {
@@ -362,7 +362,7 @@ async function main() {
     },
   });
 
-  const homejoy = await prisma.startup.upsert({
+  const homejoy = await prisma.company.upsert({
     where: { slug: 'homejoy' },
     update: {},
     create: {
@@ -411,7 +411,7 @@ async function main() {
     },
   });
 
-  const jawbone = await prisma.startup.upsert({
+  const jawbone = await prisma.company.upsert({
     where: { slug: 'jawbone' },
     update: {},
     create: {
@@ -460,7 +460,7 @@ async function main() {
     },
   });
 
-  const colorLabs = await prisma.startup.upsert({
+  const colorLabs = await prisma.company.upsert({
     where: { slug: 'color-labs' },
     update: {},
     create: {
@@ -508,7 +508,7 @@ async function main() {
     },
   });
 
-  const secret = await prisma.startup.upsert({
+  const secret = await prisma.company.upsert({
     where: { slug: 'secret-app' },
     update: {},
     create: {
@@ -557,7 +557,7 @@ async function main() {
     },
   });
 
-  const yikYak = await prisma.startup.upsert({
+  const yikYak = await prisma.company.upsert({
     where: { slug: 'yik-yak' },
     update: {},
     create: {
@@ -606,7 +606,7 @@ async function main() {
     },
   });
 
-  const rdio = await prisma.startup.upsert({
+  const rdio = await prisma.company.upsert({
     where: { slug: 'rdio' },
     update: {},
     create: {
@@ -655,7 +655,7 @@ async function main() {
     },
   });
 
-  const fab = await prisma.startup.upsert({
+  const fab = await prisma.company.upsert({
     where: { slug: 'fab-com' },
     update: {},
     create: {
@@ -705,7 +705,7 @@ async function main() {
     },
   });
 
-  const zirtual = await prisma.startup.upsert({
+  const zirtual = await prisma.company.upsert({
     where: { slug: 'zirtual' },
     update: {},
     create: {
@@ -753,7 +753,7 @@ async function main() {
     },
   });
 
-  const betterPlace = await prisma.startup.upsert({
+  const betterPlace = await prisma.company.upsert({
     where: { slug: 'better-place' },
     update: {},
     create: {
@@ -802,7 +802,7 @@ async function main() {
     },
   });
 
-  const aereo = await prisma.startup.upsert({
+  const aereo = await prisma.company.upsert({
     where: { slug: 'aereo' },
     update: {},
     create: {
@@ -850,7 +850,7 @@ async function main() {
     },
   });
 
-  const sprig = await prisma.startup.upsert({
+  const sprig = await prisma.company.upsert({
     where: { slug: 'sprig' },
     update: {},
     create: {
@@ -898,7 +898,7 @@ async function main() {
     },
   });
 
-  const dopplerLabs = await prisma.startup.upsert({
+  const dopplerLabs = await prisma.company.upsert({
     where: { slug: 'doppler-labs' },
     update: {},
     create: {
@@ -946,7 +946,7 @@ async function main() {
     },
   });
 
-  const shyp = await prisma.startup.upsert({
+  const shyp = await prisma.company.upsert({
     where: { slug: 'shyp' },
     update: {},
     create: {
@@ -995,7 +995,7 @@ async function main() {
     },
   });
 
-  const powaTech = await prisma.startup.upsert({
+  const powaTech = await prisma.company.upsert({
     where: { slug: 'powa-technologies' },
     update: {},
     create: {
@@ -1043,7 +1043,7 @@ async function main() {
     },
   });
 
-  const airware = await prisma.startup.upsert({
+  const airware = await prisma.company.upsert({
     where: { slug: 'airware' },
     update: {},
     create: {
@@ -1092,7 +1092,7 @@ async function main() {
     },
   });
 
-  const vine = await prisma.startup.upsert({
+  const vine = await prisma.company.upsert({
     where: { slug: 'vine' },
     update: {},
     create: {
@@ -1141,7 +1141,7 @@ async function main() {
     },
   });
 
-  const googlePlus = await prisma.startup.upsert({
+  const googlePlus = await prisma.company.upsert({
     where: { slug: 'google-plus' },
     update: {},
     create: {
@@ -1190,7 +1190,7 @@ async function main() {
     },
   });
 
-  const parse = await prisma.startup.upsert({
+  const parse = await prisma.company.upsert({
     where: { slug: 'parse' },
     update: {},
     create: {

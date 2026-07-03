@@ -1,17 +1,24 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextIndex", "postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
 }
 
-enum StartupStatus {
+// ==============================================
+// ENUMERATIONS
+// ==============================================
+enum CompanyStatus {
   failed
   acquired
   pivoted
   zombie
+  operating
+  public
 }
 
 enum FailureCategory {
@@ -24,7 +31,6 @@ enum FailureCategory {
   timing
   regulation
   other
-
   product
   legal
   unit_economics
@@ -35,7 +41,6 @@ enum FailureCategory {
   cashflow
   platform_risk
   execution
-
   pricing
   fraud
   ethics
@@ -48,6 +53,8 @@ enum TimelineStage {
   growth
   decline
   shutdown
+  acquisition
+  pivot
 }
 
 enum GraphOutcome {
@@ -56,126 +63,1050 @@ enum GraphOutcome {
   pivoted
 }
 
-model Startup {
-  id             String   @id @default(uuid()) @db.Uuid
-  name           String   @db.VarChar(255)
-  slug           String   @unique @db.VarChar(255)
-  status         StartupStatus
-  industry       String   @db.VarChar(100)
-  country        String   @db.VarChar(100)
-  foundingYear   Int      @map("founding_year")
-  shutdownYear   Int?     @map("shutdown_year")
-  lifetimeMonths Int?     @map("lifetime_months")
-  fundingInr     BigInt?  @map("funding_inr")
-  peakUsers      Int?     @map("peak_users")
-  teamSize       Int?     @map("team_size")
-  logoUrl        String?  @map("logo_url") @db.Text
-  summary        String   @db.Text
-  founderStory   String?  @map("founder_story") @db.Text
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  failureReasons   FailureReason[]
-  timelineEvents   TimelineEvent[]
-  metricsSnapshots MetricsSnapshot[]
-  aiAnalyses       AiAnalysis[]
-  graphEdgesSource GraphEdge[]       @relation("source_startup")
-  graphEdgesTarget GraphEdge[]      @relation("target_startup")
-
-  @@map("startups")
+enum ImportStatus {
+  pending
+  processing
+  success
+  failed
+  validated
+  duplicate
 }
 
+enum CompanyCacheStatus {
+  NEW
+  PROCESSING
+  READY
+  FAILED
+  UPDATING
+}
+
+enum SourceType {
+  manual
+  website
+  api
+  rss
+  pdf
+  article
+}
+
+enum GraphEdgeType {
+  FOUNDER_COMPANY
+  INVESTOR_COMPANY
+  COMPETITOR_COMPANY
+  COMPANY_FAILURE_PATTERN
+  COMPANY_INDUSTRY
+  COMPANY_TECHNOLOGY
+  COMPANY_MARKET
+  COMPANY_PRODUCT
+  COMPANY_ACQUISITION
+  COMPANY_ACCELERATOR
+  COMPANY_FUNDING_ROUND
+  COMPANY_FOUNDER
+  FOUNDER_FOUNDER
+  INVESTOR_INVESTOR
+  INDUSTRY_INDUSTRY
+}
+
+// ==============================================
+// CORE TABLES
+// ==============================================
+
+// Company = Startup
+model Company {
+  id             String            @id @default(uuid()) @db.Uuid
+  // Core Identity
+  name           String            @db.VarChar(255)
+  slug           String            @unique @db.VarChar(255)
+  alternativeNames Json            @default("[]")
+  status         CompanyStatus     @default(failed)
+  // Industry & Geography
+  industry       String            @db.VarChar(100)
+  industryId     String?           @db.Uuid
+  country        String            @db.VarChar(100)
+  state          String?           @db.VarChar(100)
+  city           String?           @db.VarChar(100)
+  // Timeline
+  foundingYear   Int?
+  shutdownYear   Int?
+  lifetimeMonths Int?
+  // Size & Metrics
+  fundingInr     BigInt?
+  fundingUsd     BigInt?
+  peakUsers      Int?
+  teamSize       Int?
+  // Branding
+  logoUrl        String?           @db.Text
+  websiteUrl     String?           @db.VarChar(255)
+  // Text Content
+  summary        String            @db.Text
+  description    String?           @db.Text
+  founderStory   String?           @db.Text
+  // Timestamps
+  createdAt      DateTime          @default(now()) @db.Timestamptz
+  updatedAt      DateTime          @updatedAt @db.Timestamptz
+
+  // ==============================================
+  // RELATIONS
+  // ==============================================
+  // Identity & Geography
+  industryRecord Industry?         @relation("CompanyIndustry", fields: [industryId], references: [id], onDelete: SetNull)
+  // People
+  founders       Founder[]
+  // Funding
+  fundingRounds  FundingRound[]
+  companyInvestors CompanyInvestor[]
+  // Content
+  articles       Article[]
+  postmortems    Postmortem[]
+  failureReasons FailureReason[]
+  lessons        Lesson[]
+  timelineEvents TimelineEvent[]
+  metricsSnapshots MetricsSnapshot[]
+  aiAnalyses     AiAnalysis[]
+  // Sources & Tags
+  tags           CompanyTag[]
+  sources        CompanySource[]
+  // Duplicate tracking
+  duplicates     CompanyDuplicate[] @relation("CompanyDuplicate")
+  duplicateOfRecords CompanyDuplicate[] @relation("CompanyDuplicateOf")
+  // Import tracking
+  importRecords  ImportRecord[]
+  // Technologies, Markets, Products, Accelerators
+  companyTechnologies CompanyTechnology[]
+  companyMarkets CompanyMarket[]
+  companyProducts CompanyProduct[]
+  companyAccelerators CompanyAccelerator[]
+  // Acquisitions
+  acquisitions    Acquisition[]  @relation("AcquiringCompany")
+  acquiredIn      Acquisition?  @relation("AcquiredCompany")
+  // Competitors
+  competitorsFrom CompanyCompetitor[] @relation("CompetitorSource")
+  competitorsTo   CompanyCompetitor[] @relation("CompetitorTarget")
+  // NOTE: GraphEdge is a polymorphic table (sourceId/targetId are plain Uuids,
+  // not FKs), so there are no typed relation fields to it here.
+  // User
+  bookmarks      Bookmark[]
+  // Embeddings
+  documentChunks DocumentChunk[]
+  // Portfolios, benchmarks
+  portfolioCompanies PortfolioCompany[]
+  startupBenchmarks  StartupBenchmark[]
+  // SEC EDGAR
+  secCompanies   SecCompany[]
+  importJob      CompanyImportJob?
+
+  // ==============================================
+  // INDEXES
+  // ==============================================
+  @@map("companies")
+  @@index([status])
+  @@index([industry])
+  @@index([country])
+  @@index([foundingYear])
+  @@index([shutdownYear])
+}
+
+// ==============================================
+// PEOPLE
+// ==============================================
+model Founder {
+  id          String     @id @default(uuid()) @db.Uuid
+  companyId   String     @db.Uuid
+  name        String     @db.VarChar(255)
+  role        String?    @db.VarChar(255)
+  bio         String?    @db.Text
+  linkedinUrl String?    @db.VarChar(255)
+  twitterUrl  String?    @db.VarChar(255)
+  isPrimary   Boolean    @default(false)
+  createdAt   DateTime   @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("founders")
+  @@index([companyId])
+}
+
+// ==============================================
+// FUNDING & INVESTORS
+// ==============================================
+model FundingRound {
+  id           String           @id @default(uuid()) @db.Uuid
+  companyId    String           @db.Uuid
+  roundType    String           @db.VarChar(100)
+  amountInr    BigInt?
+  amountUsd    BigInt?
+  currency     String?          @default("USD") @db.VarChar(10)
+  announcementDate DateTime?     @db.Date
+  valuation    BigInt?
+  leadInvestor String?          @db.VarChar(255)
+  description  String?          @db.Text
+  isConfirmed  Boolean          @default(true)
+  createdAt    DateTime         @default(now()) @db.Timestamptz
+
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  investorRounds InvestorRound[]
+
+  @@map("funding_rounds")
+  @@index([companyId])
+  @@index([roundType])
+}
+
+model Investor {
+  id           String           @id @default(uuid()) @db.Uuid
+  name         String           @db.VarChar(255)
+  slug         String           @unique @db.VarChar(255)
+  type         String?          @db.VarChar(100)
+  description  String?          @db.Text
+  websiteUrl   String?          @db.VarChar(255)
+  logoUrl      String?          @db.Text
+  headquarters String?          @db.VarChar(255)
+  createdAt    DateTime         @default(now()) @db.Timestamptz
+
+  investorRounds InvestorRound[]
+  companyInvestors CompanyInvestor[]
+
+  @@map("investors")
+  @@index([type])
+}
+
+model InvestorRound {
+  id             String     @id @default(uuid()) @db.Uuid
+  investorId     String     @db.Uuid
+  fundingRoundId String     @db.Uuid
+  amountInr      BigInt?
+  amountUsd      BigInt?
+  isLead         Boolean    @default(false)
+  createdAt      DateTime   @default(now()) @db.Timestamptz
+
+  investor     Investor     @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  fundingRound FundingRound @relation(fields: [fundingRoundId], references: [id], onDelete: Cascade)
+
+  @@unique([investorId, fundingRoundId])
+  @@map("investor_rounds")
+}
+
+model CompanyInvestor {
+  id         String   @id @default(uuid()) @db.Uuid
+  companyId  String   @db.Uuid
+  investorId String   @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  investor Investor @relation(fields: [investorId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, investorId])
+  @@map("company_investors")
+}
+
+// ==============================================
+// CONTENT & POSTMORTEMS
+// ==============================================
+model Article {
+  id          String     @id @default(uuid()) @db.Uuid
+  companyId   String     @db.Uuid
+  title       String     @db.VarChar(500)
+  content     String?    @db.Text
+  url         String     @unique @db.VarChar(1000)
+  publishedAt DateTime   @db.Timestamptz
+  source      String?    @db.VarChar(255)
+  author      String?    @db.VarChar(255)
+  summary     String?    @db.Text
+  isPrimary   Boolean    @default(false)
+  createdAt   DateTime   @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("articles")
+  @@index([companyId])
+  @@index([source])
+}
+
+model Postmortem {
+  id                  String     @id @default(uuid()) @db.Uuid
+  companyId           String     @db.Uuid
+  title               String     @db.VarChar(500)
+  content             String     @db.Text
+  author              String?    @db.VarChar(255)
+  publishedAt         DateTime?  @db.Timestamptz
+  isOfficial          Boolean    @default(false)
+  isPivotVaultCurated Boolean    @default(false)
+  createdAt           DateTime   @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("postmortems")
+  @@index([companyId])
+}
+
+// ==============================================
+// FAILURE ANALYSIS
+// ==============================================
 model FailureReason {
   id            String          @id @default(uuid()) @db.Uuid
-  startupId     String          @map("startup_id") @db.Uuid
+  companyId     String          @db.Uuid
   category      FailureCategory
   description   String          @db.Text
-  severityScore Int             @map("severity_score")
-  isPrimary     Boolean         @default(false) @map("is_primary")
+  severityScore Int             @default(50)
+  isPrimary     Boolean         @default(false)
+  createdAt     DateTime        @default(now()) @db.Timestamptz
 
-  startup Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("failure_reasons")
+  @@index([companyId])
+  @@index([category])
+}
+
+model Lesson {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid
+  title     String   @db.VarChar(500)
+  content   String   @db.Text
+  priority  String?  @db.VarChar(50)
+  isKey     Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("lessons")
+  @@index([companyId])
+  @@index([priority])
 }
 
 model TimelineEvent {
   id          String         @id @default(uuid()) @db.Uuid
-  startupId   String         @map("startup_id") @db.Uuid
+  companyId   String         @db.Uuid
   stage       TimelineStage
-  eventDate   DateTime       @map("event_date") @db.Date
+  eventDate   DateTime       @db.Date
   title       String         @db.VarChar(255)
   description String         @db.Text
-  metricKey   String?        @map("metric_key") @db.VarChar(100)
-  metricValue Decimal?       @map("metric_value") @db.Decimal(10, 2)
+  metricKey   String?        @db.VarChar(100)
+  metricValue Decimal?       @db.Decimal(10,2)
+  createdAt   DateTime       @default(now()) @db.Timestamptz
 
-  startup Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("timeline_events")
+  @@index([companyId])
+  @@index([stage])
 }
 
 model MetricsSnapshot {
   id           String   @id @default(uuid()) @db.Uuid
-  startupId    String   @map("startup_id") @db.Uuid
-  recordedMonth DateTime @map("recorded_month") @db.Date
+  companyId    String   @db.Uuid
+  recordedMonth DateTime @db.Date
   users        Int?
-  revenueInr   BigInt?  @map("revenue_inr")
-  mrrInr       BigInt?  @map("mrr_inr")
-  burnRateInr  BigInt?  @map("burn_rate_inr")
-  churnRate    Decimal? @map("churn_rate") @db.Decimal(5, 2)
+  revenueInr   BigInt?
+  revenueUsd   BigInt?
+  mrrInr       BigInt?
+  mrrUsd       BigInt?
+  burnRateInr  BigInt?
+  burnRateUsd  BigInt?
+  churnRate    Decimal? @db.Decimal(5,2)
+  ltv          Decimal? @db.Decimal(10,2)
+  cac          Decimal? @db.Decimal(10,2)
+  createdAt    DateTime @default(now()) @db.Timestamptz
 
-  startup Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("metrics_snapshots")
+  @@index([companyId])
 }
 
 model AiAnalysis {
   id               String   @id @default(uuid()) @db.Uuid
-  startupId        String   @unique @map("startup_id") @db.Uuid
-  retentionScore   Int      @map("retention_score")
-  monetizationScore Int     @map("monetization_score")
-  pmfScore         Int      @map("pmf_score")
-  marketingScore   Int      @map("marketing_score")
-  primaryCause     String   @map("primary_cause") @db.VarChar(100)
-  confidence       Int
+  companyId        String   @unique @db.Uuid
+  retentionScore   Int      @default(50)
+  monetizationScore Int    @default(50)
+  pmfScore         Int      @default(50)
+  marketingScore   Int      @default(50)
+  primaryCause     String   @db.VarChar(100)
+  confidence       Int      @default(80)
   recommendations  Json     @default("[]")
-  rawLlmResponse   String?  @map("raw_llm_response") @db.Text
-  generatedAt      DateTime @default(now()) @map("generated_at")
+  rawLlmResponse   String?  @db.Text
+  generatedAt      DateTime @default(now()) @db.Timestamptz
 
-  startup Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("ai_analyses")
 }
 
+// ==============================================
+// KNOWLEDGE GRAPH ENTITIES
+// ==============================================
+model Technology {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  category    String?  @db.VarChar(100)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  companyTechnologies CompanyTechnology[]
+
+  @@map("technologies")
+  @@index([category])
+}
+
+model Market {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  category    String?  @db.VarChar(100)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  companyMarkets CompanyMarket[]
+
+  @@map("markets")
+  @@index([category])
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  category    String?  @db.VarChar(100)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  companyProducts CompanyProduct[]
+
+  @@map("products")
+  @@index([category])
+}
+
+model Accelerator {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  location    String?  @db.VarChar(255)
+  websiteUrl  String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  companyAccelerators CompanyAccelerator[]
+
+  @@map("accelerators")
+}
+
+model Acquisition {
+  id                String    @id @default(uuid()) @db.Uuid
+  acquiringCompanyId String   @db.Uuid
+  acquiredCompanyId String?   @unique @db.Uuid
+  acquiredCompanyName String?  @db.VarChar(255)
+  amountUsd         BigInt?
+  amountInr         BigInt?
+  announcementDate  DateTime? @db.Date
+  description       String?   @db.Text
+  createdAt         DateTime  @default(now()) @db.Timestamptz
+
+  acquiringCompany Company  @relation("AcquiringCompany", fields: [acquiringCompanyId], references: [id], onDelete: Cascade)
+  acquiredCompany  Company? @relation("AcquiredCompany", fields: [acquiredCompanyId], references: [id], onDelete: SetNull)
+
+  @@map("acquisitions")
+  @@index([acquiringCompanyId])
+  @@index([acquiredCompanyId])
+}
+
+model CompanyCompetitor {
+  id            String   @id @default(uuid()) @db.Uuid
+  sourceCompanyId String @db.Uuid
+  targetCompanyId String @db.Uuid
+  description     String?  @db.Text
+  createdAt       DateTime @default(now()) @db.Timestamptz
+
+  sourceCompany Company @relation("CompetitorSource", fields: [sourceCompanyId], references: [id], onDelete: Cascade)
+  targetCompany Company @relation("CompetitorTarget", fields: [targetCompanyId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceCompanyId, targetCompanyId])
+  @@map("company_competitors")
+}
+
+model CompanyTechnology {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  technologyId  String   @db.Uuid
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  technology Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, technologyId])
+  @@map("company_technologies")
+}
+
+model CompanyMarket {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  marketId      String   @db.Uuid
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  market  Market  @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, marketId])
+  @@map("company_markets")
+}
+
+model CompanyProduct {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  productId     String   @db.Uuid
+  isPrimary     Boolean  @default(false)
+  description   String?  @db.Text
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, productId])
+  @@map("company_products")
+}
+
+model CompanyAccelerator {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  acceleratorId String   @db.Uuid
+  cohort        String?  @db.VarChar(100)
+  year          Int?
+  description   String?  @db.Text
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  accelerator Accelerator @relation(fields: [acceleratorId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, acceleratorId, cohort])
+  @@map("company_accelerators")
+}
+
+// ==============================================
+// CLASSIFICATION & METADATA
+// ==============================================
+model Industry {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  parentId    String?  @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  parent   Industry? @relation("IndustryHierarchy", fields: [parentId], references: [id])
+  children Industry[] @relation("IndustryHierarchy")
+  companies Company[]  @relation("CompanyIndustry")
+
+  @@map("industries")
+}
+
+model Tag {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
+  category    String?  @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  companyTags CompanyTag[]
+
+  @@map("tags")
+  @@index([category])
+}
+
+model CompanyTag {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid
+  tagId     String   @db.Uuid
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, tagId])
+  @@map("company_tags")
+}
+
+// ==============================================
+// SOURCE TRACKING
+// ==============================================
+model Source {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @db.VarChar(255)
+  type        SourceType @default(manual)
+  url         String?    @db.VarChar(1000)
+  description String?    @db.Text
+  createdAt   DateTime   @default(now()) @db.Timestamptz
+
+  companySources CompanySource[]
+  importRecords  ImportRecord[]
+
+  @@map("sources")
+}
+
+model CompanySource {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  sourceId      String   @db.Uuid
+  url           String?  @db.VarChar(1000)
+  confidence    Decimal  @db.Decimal(3,2)
+  publishedAt   DateTime? @db.Timestamptz
+  lastFetchedAt DateTime? @db.Timestamptz
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  source  Source  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@map("company_sources")
+  @@index([companyId])
+}
+
+// ==============================================
+// IMPORT & VALIDATION
+// ==============================================
+model ImportRecord {
+  id          String        @id @default(uuid()) @db.Uuid
+  sourceId    String?       @db.Uuid
+  companyId   String?       @db.Uuid
+  status      ImportStatus  @default(pending)
+  rawData     Json          @default("{}")
+  errors      Json?         @default("[]")
+  warnings    Json?         @default("[]")
+  confidence  Decimal?      @db.Decimal(3,2)
+  startedAt   DateTime?     @db.Timestamptz
+  finishedAt  DateTime?     @db.Timestamptz
+  retryCount  Int           @default(0)
+  createdAt   DateTime      @default(now()) @db.Timestamptz
+
+  source    Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@map("import_records")
+  @@index([status])
+}
+
+model CompanyDuplicate {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  duplicateOfId String?  @db.Uuid
+  duplicateType String   @db.VarChar(100)
+  confidence    Decimal  @db.Decimal(3,2)
+  resolution    String?  @db.VarChar(100)
+  resolvedAt    DateTime? @db.Timestamptz
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  company     Company  @relation("CompanyDuplicate", fields: [companyId], references: [id], onDelete: Cascade)
+  duplicateOf Company? @relation("CompanyDuplicateOf", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+
+  @@map("company_duplicates")
+  @@index([companyId])
+  @@index([duplicateOfId])
+}
+
+// ==============================================
+// AI / VECTOR SEARCH READINESS
+// ==============================================
+model DocumentChunk {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid
+  content         String   @db.Text
+  chunkIndex      Int
+  chunkType       String?  @db.VarChar(100)
+  sourceModel     String?  @db.VarChar(100)
+  sourceId        String?  @db.Uuid
+  embedding       Unsupported("vector")?
+  embeddingModel  String?  @db.VarChar(100)
+  tokenCount      Int?
+  createdAt       DateTime @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("document_chunks")
+  @@index([companyId])
+  @@index([chunkType])
+}
+
+// ==============================================
+// USER & APP DATA
+// ==============================================
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   name         String   @db.VarChar(120)
   email        String   @unique @db.VarChar(255)
-  passwordHash String   @map("password_hash") @db.Text
-  createdAt    DateTime @default(now()) @map("created_at")
+  passwordHash String   @db.Text
+  avatarUrl    String?  @db.Text
+  role         String   @default("founder")
+  timezone     String?  @default("UTC")
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
 
-  bookmarks     Bookmark[]
-  searchHistory SearchHistory[]
+  bookmarks          Bookmark[]
+  searchHistory      SearchHistory[]
+  // New phase 7
+  collections        Collection[]
+  savedResearch      SavedResearch[]
+  aiChatMessages     AiChatMessage[]
+  aiMentorSessions   AiMentorSession[]
+  weeklyReports      WeeklyReport[]
+  learningPathItems  LearningPathItem[]
+  notifications      Notification[]
+  founderTimeline    FounderTimelineEvent[]
+  decisionSimulations DecisionSimulation[]
+  whatIfSimulations  WhatIfSimulation[]
+  userPortfolios     Portfolio[]
+  // Owned startup workspace
+  ownedStartups      UserStartup[]
+  // Analytics / monitoring
+  analyticsEvents    AnalyticsEvent[]
+  apiRequests        ApiRequest[]
 
   @@map("users")
 }
 
-model Bookmark {
+// User's portfolio of companies
+model Portfolio {
   id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  startupId   String   @map("startup_id") @db.Uuid
-  createdAt   DateTime @default(now()) @map("created_at")
+  userId      String   @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  color       String?  @db.VarChar(20)
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companies   PortfolioCompany[]
+
+  @@map("portfolios")
+}
+
+model PortfolioCompany {
+  id         String   @id @default(uuid()) @db.Uuid
+  portfolioId String  @db.Uuid
+  companyId   String  @db.Uuid
+  role        String? @db.VarChar(100) // "owned", "investor", "mentor", "watchlist"
+  notes       String? @db.Text
+  addedAt     DateTime @default(now()) @db.Timestamptz
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_companies")
+  @@index([portfolioId])
+  @@index([companyId])
+}
+
+// User-owned startup
+model UserStartup {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  name        String   @db.VarChar(255)
+  slug        String   @db.VarChar(255)
+  stage       String   @default("idea")
+  industry    String?  @db.VarChar(100)
+  country     String?  @db.VarChar(100)
+  description String?  @db.Text
+  websiteUrl  String?  @db.VarChar(255)
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, startupId])
+  @@map("user_startups")
+  @@index([userId])
+}
+
+// Collections
+model Collection {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  color       String?  @db.VarChar(20)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CollectionItem[]
+
+  @@map("collections")
+  @@index([userId])
+}
+
+model CollectionItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  collectionId String  @db.Uuid
+  itemType     String  @db.VarChar(100) // "company", "lesson", "article"
+  itemId       String  @db.Uuid
+  notes        String? @db.Text
+  addedAt      DateTime @default(now()) @db.Timestamptz
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@map("collection_items")
+  @@index([collectionId])
+}
+
+// Saved Research
+model SavedResearch {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  title       String   @db.VarChar(500)
+  description String?  @db.Text
+  query       String?  @db.VarChar(500)
+  results     Json?
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_research")
+  @@index([userId])
+}
+
+// Notifications
+model Notification {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  type        String   @db.VarChar(100)
+  title       String   @db.VarChar(255)
+  content     String?  @db.Text
+  isRead      Boolean  @default(false)
+  actionUrl   String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+  @@index([userId])
+  @@index([isRead])
+}
+
+// AI Mentor Sessions
+model AiMentorSession {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  type        String   @default("mentor") // "mentor", "cofounder"
+  title       String   @db.VarChar(255)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AiChatMessage[]
+
+  @@map("ai_mentor_sessions")
+  @@index([userId])
+}
+
+model AiChatMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  sessionId   String?  @db.Uuid
+  role        String   @db.VarChar(20) // "user", "assistant"
+  content     String   @db.Text
+  sourcesUsed Json?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session AiMentorSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("ai_chat_messages")
+  @@index([userId])
+  @@index([sessionId])
+}
+
+// Learning Paths
+model LearningPath {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  level       String   @default("beginner")
+  category    String?  @db.VarChar(100)
+  isPinned    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  items LearningPathItem[]
+
+  @@map("learning_paths")
+}
+
+model LearningPathItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @db.Uuid
+  pathId      String?  @db.Uuid
+  title       String   @db.VarChar(255)
+  type        String   @db.VarChar(100) // "lesson", "article", "video"
+  description String?  @db.Text
+  url         String?  @db.VarChar(500)
+  durationMinutes Int?
+  order       Int      @default(0)
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path LearningPath? @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@map("learning_path_items")
+  @@index([userId])
+}
+
+// Founder Timeline
+model FounderTimelineEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  eventDate   DateTime @db.Date
+  type        String   @db.VarChar(100)
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("founder_timeline")
+  @@index([userId])
+}
+
+// Decision Simulations
+model DecisionSimulation {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  outcome     String?  @db.VarChar(255)
+  context     Json?
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("decision_simulations")
+  @@index([userId])
+}
+
+model WhatIfSimulation {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  scenario    Json?
+  results     Json?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("what_if_simulations")
+  @@index([userId])
+}
+
+// Weekly Reports
+model WeeklyReport {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  weekNumber   Int
+  year         Int
+  reportData   Json
+  isGenerated  Boolean  @default(false)
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("weekly_reports")
+  @@index([userId, year, weekNumber])
+}
+
+// Startup Benchmarks & Risk Prediction
+model StartupBenchmark {
+  id          String   @id @default(uuid()) @db.Uuid
+  companyId   String   @db.Uuid
+  metricKey   String   @db.VarChar(100)
+  metricValue Decimal? @db.Decimal(20,4)
+  benchmarkPercentile Int?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("startup_benchmarks")
+  @@index([companyId])
+}
+
+// ==============================================
+// ANALYTICS & MONITORING
+// ==============================================
+enum AnalyticsEventType {
+  page_view
+  api_request
+  search_query
+  bookmark_add
+  bookmark_remove
+  ai_chat
+  ai_analysis_run
+  document_chunked
+  graph_generated
+  company_imported
+  notification_sent
+  report_downloaded
+}
+
+model AnalyticsEvent {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String?             @db.Uuid
+  eventType   AnalyticsEventType
+  eventName   String              @db.VarChar(255)
+  properties  Json                @default("{}")
+  ipAddress   String?             @db.VarChar(50)
+  userAgent   String?             @db.VarChar(1000)
+  createdAt   DateTime            @default(now()) @db.Timestamptz
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("analytics_events")
+  @@index([eventType])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ApiRequest {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @db.Uuid
+  method      String   @db.VarChar(10)
+  path        String   @db.VarChar(500)
+  statusCode  Int
+  responseTimeMs Int
+  userAgent   String?  @db.VarChar(1000)
+  ipAddress   String?  @db.VarChar(50)
+  requestBody Json?    @default("{}")
+  errorMessage String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_requests")
+  @@index([method, path])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([statusCode])
+}
+
+model Bookmark {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  companyId String   @db.Uuid
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
   @@map("bookmarks")
 }
 
 model SearchHistory {
   id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
+  userId    String   @db.Uuid
   query     String   @db.VarChar(500)
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -186,22 +1117,326 @@ model Confession {
   id         String   @id @default(uuid()) @db.Uuid
   text       String   @db.VarChar(280)
   upvotes    Int      @default(0)
-  isApproved Boolean  @default(true) @map("is_approved")
-  createdAt  DateTime @default(now()) @map("created_at")
+  isApproved Boolean  @default(true)
+  createdAt  DateTime @default(now()) @db.Timestamptz
 
   @@map("confessions")
 }
 
+// ==============================================
+// KNOWLEDGE GRAPH - UNIFIED EDGE TABLE
+// ==============================================
 model GraphEdge {
-  id              String        @id @default(uuid()) @db.Uuid
-  sourceStartupId String        @map("source_startup_id") @db.Uuid
-  mistakeCategory String        @map("mistake_category") @db.VarChar(100)
-  targetStartupId String?       @map("target_startup_id") @db.Uuid
-  outcome         GraphOutcome
-  edgeWeight      Decimal       @map("edge_weight") @db.Decimal(5, 2)
-
-  sourceStartup Startup  @relation("source_startup", fields: [sourceStartupId], references: [id], onDelete: Cascade)
-  targetStartup Startup? @relation("target_startup", fields: [targetStartupId], references: [id], onDelete: SetNull)
+  id              String          @id @default(uuid()) @db.Uuid
+  edgeType        GraphEdgeType
+  // Source & Target (polymorphic, but we'll use company as primary for now)
+  sourceType      String          @db.VarChar(50)
+  sourceId        String          @db.Uuid
+  targetType      String          @db.VarChar(50)
+  targetId        String          @db.Uuid
+  // Metadata
+  edgeWeight      Decimal         @db.Decimal(5,2) @default(1.0)
+  description     String?         @db.Text
+  // Timestamps
+  createdAt       DateTime        @default(now()) @db.Timestamptz
 
   @@map("graph_edges")
+  @@index([sourceType, sourceId])
+  @@index([targetType, targetId])
+  @@index([edgeType])
+}
+
+// ==============================================
+// SEC EDGAR INTEGRATION
+// ==============================================
+enum SecFilingType {
+  TEN_K
+  TEN_Q
+  EIGHT_K
+  S_1
+  DEF_14A
+  TWENTY_F
+}
+
+model SecCompany {
+  id          String   @id @default(uuid()) @db.Uuid
+  cik         String   @unique @db.VarChar(20) // Central Index Key (10-digit with leading zeros)
+  tickers     String[] @default([])
+  name        String   @db.VarChar(255)
+  businessAddress String? @db.VarChar(500)
+  phone       String? @db.VarChar(50)
+  lastSynced  DateTime? @db.Timestamptz
+  lastModifiedDate DateTime? @db.Timestamptz
+  etag        String? @db.VarChar(200) // For incremental sync
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  // Relations
+  companyId String? @db.Uuid // Link to existing Company model
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  filings   SecFiling[]
+  metadata  SecMetadata[]
+  financials SecFinancial[]
+  riskFactors SecRiskFactor[]
+  extracts    SecFilingExtract[]
+  intelligence SecFilingIntelligence[]
+  filingChunks SecFilingChunk[]
+  importJobs   CompanyImportJob[]
+
+  @@map("sec_companies")
+  @@index([cik])
+  @@index([tickers])
+  @@index([companyId])
+}
+
+model SecFiling {
+  id               String            @id @default(uuid()) @db.Uuid
+  secCompanyId     String            @db.Uuid
+  accessionNumber  String            @unique @db.VarChar(50)
+  filingType       SecFilingType
+  filingDate       DateTime?         @db.Date
+  reportDate       DateTime?         @db.Date
+  fiscalYear       Int?
+  fiscalPeriod     String? @db.VarChar(20)
+  url              String            @db.VarChar(500)
+  primaryDocument  String? @db.VarChar(255)
+  primaryDocumentType String? @db.VarChar(50)
+  sizeBytes        BigInt?
+  status           String @default("pending") @db.VarChar(50) // pending, processing, complete, failed
+  etag             String? @db.VarChar(200)
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @updatedAt @db.Timestamptz
+
+  secCompany SecCompany @relation(fields: [secCompanyId], references: [id], onDelete: Cascade)
+  documents  SecDocument[]
+  financials SecFinancial[]
+  riskFactors SecRiskFactor[]
+  extracts    SecFilingExtract[]
+  intelligence SecFilingIntelligence[]
+  citations   SecFilingCitation[]
+  chunks      SecFilingChunk[]
+
+  @@map("sec_filings")
+  @@index([secCompanyId])
+  @@index([accessionNumber])
+  @@index([filingType])
+  @@index([filingDate])
+}
+
+model SecDocument {
+  id             String   @id @default(uuid()) @db.Uuid
+  secFilingId    String   @db.Uuid
+  sequence       Int?
+  fileName       String? @db.VarChar(255)
+  description    String? @db.VarChar(255)
+  type           String? @db.VarChar(100)
+  url            String   @db.VarChar(500)
+  sizeBytes      BigInt?
+  content        String? @db.Text // Stored as fallback
+  contentType    String? @db.VarChar(100)
+  etag           String? @db.VarChar(200)
+  lastFetchedAt  DateTime? @db.Timestamptz
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  secFiling SecFiling @relation(fields: [secFilingId], references: [id], onDelete: Cascade)
+
+  @@map("sec_documents")
+  @@index([secFilingId])
+}
+
+model SecFinancial {
+  id             String   @id @default(uuid()) @db.Uuid
+  secCompanyId   String   @db.Uuid
+  secFilingId    String   @db.Uuid
+  metricKey      String   @db.VarChar(255)
+  metricValue    Decimal? @db.Decimal(30,10)
+  unit           String? @db.VarChar(100)
+  periodStart    DateTime? @db.Date
+  periodEnd      DateTime? @db.Date
+  fiscalYear     Int?
+  fiscalPeriod   String? @db.VarChar(50)
+  source         String? @db.VarChar(100)
+  sourceConcept  String? @db.VarChar(255)
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  secCompany SecCompany @relation(fields: [secCompanyId], references: [id], onDelete: Cascade)
+  secFiling  SecFiling @relation(fields: [secFilingId], references: [id], onDelete: Cascade)
+
+  @@map("sec_financials")
+  @@index([secCompanyId])
+  @@index([secFilingId])
+  @@index([metricKey])
+  @@index([fiscalYear])
+}
+
+model SecRiskFactor {
+  id              String   @id @default(uuid()) @db.Uuid
+  secCompanyId    String   @db.Uuid
+  secFilingId     String   @db.Uuid
+  title           String? @db.VarChar(500)
+  content         String   @db.Text
+  riskCategory    String? @db.VarChar(100)
+  confidence      Decimal? @db.Decimal(3,2)
+  orderIndex      Int
+  createdAt       DateTime @default(now()) @db.Timestamptz
+
+  secCompany SecCompany @relation(fields: [secCompanyId], references: [id], onDelete: Cascade)
+  secFiling  SecFiling @relation(fields: [secFilingId], references: [id], onDelete: Cascade)
+
+  @@map("sec_risk_factors")
+  @@index([secCompanyId])
+  @@index([secFilingId])
+  @@index([riskCategory])
+}
+
+model SecMetadata {
+  id          String        @id @default(uuid()) @db.Uuid
+  secCompanyId String       @db.Uuid
+  key         String        @db.VarChar(100)
+  value       Json
+  createdAt   DateTime      @default(now()) @db.Timestamptz
+
+  secCompany SecCompany @relation(fields: [secCompanyId], references: [id], onDelete: Cascade)
+
+  @@map("sec_metadata")
+  @@unique([secCompanyId, key])
+  @@index([key])
+}
+
+// ==============================================
+// SEC FILING INTELLIGENCE (Phase 2)
+// ==============================================
+model SecFilingExtract {
+  id              String   @id @default(uuid()) @db.Uuid
+  secCompanyId    String   @db.Uuid
+  secFilingId     String   @db.Uuid
+  fieldType       String   @db.VarChar(100)
+  fieldKey        String   @default("default") @db.VarChar(100)
+  value           String   @db.Text
+  valueNumeric    Decimal? @db.Decimal(30,10)
+  unit            String?  @db.VarChar(50)
+  confidence      Decimal  @db.Decimal(3,2)
+  source          String   @db.VarChar(100)
+  citationText    String?  @db.Text
+  pageNumber      String?  @db.VarChar(20)
+  sectionKey      String?  @db.VarChar(100)
+  extractedAt     DateTime @default(now()) @db.Timestamptz
+
+  secCompany SecCompany @relation(fields: [secCompanyId], references: [id], onDelete: Cascade)
+  secFiling  SecFiling  @relation(fields: [secFilingId], references: [id], onDelete: Cascade)
+  citations  SecFilingCitation[]
+
+  @@map("sec_filing_extracts")
+  @@unique([secFilingId, fieldType, fieldKey])
+  @@index([secCompanyId])
+  @@index([secFilingId])
+  @@index([fieldType])
+}
+
+model SecFilingIntelligence {
+  id                  String   @id @default(uuid()) @db.Uuid
+  secCompanyId        String   @db.Uuid
+  secFilingId         String?  @db.Uuid
+  executiveSummary    String   @db.Text
+  financialHealthScore   Int?
+  businessHealthScore    Int?
+  operationalRiskScore   Int?
+  marketRiskScore       Int?
+  leadershipRiskScore   Int?
+  fundingRiskScore      Int?
+  overallHealthScore    Int?
+  scoreReasoning        Json?
+  generatedAt           DateTime @default(now()) @db.Timestamptz
+  updatedAt             DateTime @updatedAt @db.Timestamptz
+
+  secCompany SecCompany @relation(fields: [secCompanyId], references: [id], onDelete: Cascade)
+  secFiling  SecFiling? @relation(fields: [secFilingId], references: [id], onDelete: SetNull)
+
+  @@map("sec_filing_intelligence")
+  @@index([secCompanyId])
+  @@index([secFilingId])
+}
+
+model SecFilingCitation {
+  id              String   @id @default(uuid()) @db.Uuid
+  secFilingExtractId String? @db.Uuid
+  secFilingId     String   @db.Uuid
+  text            String   @db.Text
+  pageNumber      String?  @db.VarChar(20)
+  sectionKey      String?  @db.VarChar(100)
+  confidence      Decimal? @db.Decimal(3,2)
+  createdAt       DateTime @default(now()) @db.Timestamptz
+
+  secFilingExtract SecFilingExtract? @relation(fields: [secFilingExtractId], references: [id], onDelete: SetNull)
+  secFiling        SecFiling        @relation(fields: [secFilingId], references: [id], onDelete: Cascade)
+
+  @@map("sec_filing_citations")
+  @@index([secFilingId])
+  @@index([secFilingExtractId])
+}
+
+// ==============================================
+// SEC RAG SEARCH (Phase 3)
+// ==============================================
+model SecFilingChunk {
+  id              String   @id @default(uuid()) @db.Uuid
+  secCompanyId    String   @db.Uuid
+  secFilingId     String   @db.Uuid
+  chunkIndex      Int
+  content         String   @db.Text
+  sectionKey      String?  @db.VarChar(100)
+  sectionTitle    String?  @db.VarChar(255)
+  citationText    String   @db.Text
+  pageNumber      String?  @db.VarChar(20)
+  confidence      Decimal  @default(0.80) @db.Decimal(3,2)
+  metadata        Json     @default("{}")
+  embedding       Unsupported("vector")?
+  embeddingModel  String?  @db.VarChar(100)
+  tokenCount      Int?
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
+
+  secCompany SecCompany @relation(fields: [secCompanyId], references: [id], onDelete: Cascade)
+  secFiling  SecFiling  @relation(fields: [secFilingId], references: [id], onDelete: Cascade)
+
+  @@map("sec_filing_chunks")
+  @@unique([secFilingId, chunkIndex])
+  @@index([secCompanyId])
+  @@index([secFilingId])
+  @@index([sectionKey])
+}
+
+// ==============================================
+// ON-DEMAND COMPANY IMPORT (V2)
+// ==============================================
+model CompanyImportJob {
+  id              String             @id @default(uuid()) @db.Uuid
+  query           String             @db.VarChar(500)
+  dedupeKey       String             @unique @db.VarChar(120)
+  identifier      String?            @db.VarChar(255)
+  cik             String?            @db.VarChar(20)
+  ticker          String?            @db.VarChar(20)
+  companyId       String?            @unique @db.Uuid
+  secCompanyId    String?            @db.Uuid
+  status          CompanyCacheStatus @default(NEW)
+  progress        Json               @default("[]")
+  currentStep     String?            @db.VarChar(100)
+  errorMessage    String?            @db.Text
+  profileSnapshot Json?
+  sourcesUsed     Json               @default("[]")
+  retryCount      Int                @default(0)
+  maxRetries      Int                @default(3)
+  startedAt       DateTime?          @db.Timestamptz
+  finishedAt      DateTime?          @db.Timestamptz
+  lastRefreshedAt DateTime?          @db.Timestamptz
+  createdAt       DateTime           @default(now()) @db.Timestamptz
+  updatedAt       DateTime           @updatedAt @db.Timestamptz
+
+  company    Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  secCompany SecCompany? @relation(fields: [secCompanyId], references: [id], onDelete: SetNull)
+
+  @@map("company_import_jobs")
+  @@index([status])
+  @@index([cik])
+  @@index([query])
 }

@@ -15,8 +15,18 @@ const insightsRoutes = require('./routes/insights');
 const authRoutes = require('./routes/auth');
 const bookmarkRoutes = require('./routes/bookmarks');
 const quizRoutes = require('./routes/quiz');
-// const rssRoutes = require('./routes/rss');
-// const feedbackRoutes = require('./routes/feedback');
+const monitoringRoutes = require('./routes/monitoring');
+const ragRoutes = require('./routes/rag');
+const founderIntelligenceRoutes = require('./routes/founderIntelligence');
+const analyticsRoutes = require('./routes/analytics');
+const secRoutes = require('./routes/sec');
+const companiesRoutes = require('./routes/companies');
+const { registerWeeklyRefresh } = require('./services/companyImport/scheduler');
+const { trackApiRequests } = require('./middleware/analytics');
+const { startSchedulers } = require('./pipeline/scheduler');
+const { secService } = require('./services/sec');
+// Import all workers to start them
+require('./pipeline/workers');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -41,6 +51,7 @@ app.use(cors({
 }));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10kb' }));
+app.use(trackApiRequests);
 
 // Global rate limiter
 const globalLimiter = rateLimit({
@@ -62,10 +73,16 @@ app.use('/api/auth', authRoutes);
 app.use('/api/startups', startupRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/graph', graphRoutes);
+app.use('/api/rag', ragRoutes);
+app.use('/api/founder', founderIntelligenceRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/confessions', confessionRoutes);
 app.use('/api/insights', insightsRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/sec', secRoutes);
+app.use('/api/companies', companiesRoutes);
 // app.use('/api/rss', rssRoutes);
 // app.use('/api/feedback', feedbackRoutes);
 
@@ -81,8 +98,15 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`PivotVault API running on port ${PORT}`);
+  // Start the agent schedulers
+  startSchedulers();
+  // Start the SEC EDGAR incremental sync (daily 02:30 UTC by default)
+  if (process.env.SEC_SYNC_ENABLED !== 'false') {
+    secService.startScheduler(process.env.SEC_SYNC_CRON || '30 2 * * *');
+  }
+  registerWeeklyRefresh(process.env.COMPANY_REFRESH_CRON || '0 4 * * 0');
 });
 
 module.exports = app;

@@ -41,6 +41,7 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const FailureQuiz = lazy(() => import('./pages/FailureQuiz'));
 const FounderPlaybook = lazy(() => import('./pages/FounderPlaybook'));
 const CompareStartups = lazy(() => import('./pages/CompareStartups'));
+const FinancialIntelligence = lazy(() => import('./pages/FinancialIntelligence'));
 const HallOfGhosts = lazy(() => import('./pages/HallOfGhosts'));
 const PitchDeckAutopsy = lazy(() => import('./pages/PitchDeckAutopsy.jsx'));
 
@@ -193,6 +194,7 @@ function AppContent() {
                     <Route path="/playbook" element={<ProtectedRoute><FounderPlaybook /></ProtectedRoute>} />
                     <Route path="/quiz" element={<FailureQuiz />} />
                     <Route path="/compare" element={<CompareStartups />} />
+                    <Route path="/financials" element={<FinancialIntelligence />} />
                     <Route path="/ghosts" element={<HallOfGhosts />} />
                     <Route path="/autopsy" element={<ProtectedRoute><PitchDeckAutopsy /></ProtectedRoute>} />
                     <Route path="/login" element={<Login />} />

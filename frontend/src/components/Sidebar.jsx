@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Skull, Search, Zap, BarChart2, MessageSquare, Share2, X, Sparkles,
   Brain, GitCompare, ClipboardCheck,
-  FileText, PanelLeftClose, PanelLeft, Ghost
+  FileText, PanelLeftClose, PanelLeft, Ghost, LineChart
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -86,6 +86,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
 
   const analysisNav = [
     { name: 'Pitch Deck Autopsy', path: '/autopsy', icon: FileText, tour: 'autopsy' },
+    { name: 'Financial Intelligence', path: '/financials', icon: LineChart },
     { name: 'Competitor Compare', path: '/compare', icon: GitCompare },
     { name: 'Insights Dashboard', path: '/insights', icon: BarChart2, tour: 'insights' },
     { name: 'Startup Graph', path: '/graph', icon: Share2 },

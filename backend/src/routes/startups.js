@@ -20,7 +20,7 @@ router.get('/', async (req, res, next) => {
         'strategy', 'cashflow', 'platform_risk', 'execution', 'pricing',
         'fraud', 'ethics',
       ]).optional(),
-      status: z.enum(['failed', 'acquired', 'pivoted', 'zombie']).optional(),
+      status: z.enum(['failed', 'acquired', 'pivoted', 'zombie', 'operating', 'public']).optional(),
       sort: z.enum(['lifetime', 'funding', 'users', 'name']).optional().default('name'),
       order: z.enum(['asc', 'desc']).optional().default('desc'),
       page: z.coerce.number().int().min(1).optional().default(1),
@@ -53,7 +53,7 @@ router.get('/', async (req, res, next) => {
     };
 
     const [data, total] = await Promise.all([
-      prisma.startup.findMany({
+      prisma.company.findMany({
         where,
         skip,
         take: params.limit,
@@ -63,7 +63,7 @@ router.get('/', async (req, res, next) => {
           _count: { select: { timelineEvents: true } },
         },
       }),
-      prisma.startup.count({ where }),
+      prisma.company.count({ where }),
     ]);
 
     res.json({
@@ -77,6 +77,7 @@ router.get('/', async (req, res, next) => {
         foundingYear: s.foundingYear,
         shutdownYear: s.shutdownYear,
         fundingInr: s.fundingInr?.toString(),
+        fundingUsd: s.fundingUsd?.toString(),
         peakUsers: s.peakUsers,
         lifetimeMonths: s.lifetimeMonths,
         teamSize: s.teamSize,
@@ -100,13 +101,16 @@ router.get('/', async (req, res, next) => {
 // GET /api/startups/:slug - Full postmortem data
 router.get('/:slug', async (req, res, next) => {
   try {
-    const startup = await prisma.startup.findUnique({
+    const startup = await prisma.company.findUnique({
       where: { slug: req.params.slug },
       include: {
         failureReasons: { orderBy: { severityScore: 'desc' } },
         timelineEvents: { orderBy: { eventDate: 'asc' } },
         metricsSnapshots: { orderBy: { recordedMonth: 'asc' } },
         aiAnalyses: true,
+        founders: true,
+        articles: true,
+        lessons: true,
       },
     });
 
@@ -117,11 +121,15 @@ router.get('/:slug', async (req, res, next) => {
     res.json({
       ...startup,
       fundingInr: startup.fundingInr?.toString(),
+      fundingUsd: startup.fundingUsd?.toString(),
       metricsSnapshots: startup.metricsSnapshots.map(m => ({
         ...m,
         revenueInr: m.revenueInr?.toString(),
+        revenueUsd: m.revenueUsd?.toString(),
         mrrInr: m.mrrInr?.toString(),
+        mrrUsd: m.mrrUsd?.toString(),
         burnRateInr: m.burnRateInr?.toString(),
+        burnRateUsd: m.burnRateUsd?.toString(),
         churnRate: m.churnRate?.toString(),
       })),
     });
@@ -133,7 +141,7 @@ router.get('/:slug', async (req, res, next) => {
 // GET /api/startups/:slug/similar - Similar startups
 router.get('/:slug/similar', async (req, res, next) => {
   try {
-    const startup = await prisma.startup.findUnique({
+    const startup = await prisma.company.findUnique({
       where: { slug: req.params.slug },
       include: {
         failureReasons: { where: { isPrimary: true } },
@@ -145,7 +153,7 @@ router.get('/:slug/similar', async (req, res, next) => {
     }
 
     const primaryFailure = startup.failureReasons[0]?.category;
-    const similar = await prisma.startup.findMany({
+    const similar = await prisma.company.findMany({
       where: {
         id: { not: startup.id },
         OR: [
@@ -187,7 +195,7 @@ router.get('/:slug/similar', async (req, res, next) => {
 // GET /api/startups/:slug/external-research - Web research and citations
 router.get('/:slug/external-research', async (req, res, next) => {
   try {
-    const startup = await prisma.startup.findUnique({
+    const startup = await prisma.company.findUnique({
       where: { slug: req.params.slug },
     });
 
