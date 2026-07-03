@@ -1,6 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } = require('@langchain/google-genai');
-const { RecursiveCharacterTextSplitter } = require('langchain/text_splitter');
+const { RecursiveCharacterTextSplitter } = require('@langchain/textsplitters');
 const { pgvector } = require('pgvector');
 const prisma = new PrismaClient();
 

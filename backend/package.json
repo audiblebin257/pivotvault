@@ -16,9 +16,9 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "@langchain/community": "^1.1.29",
     "@langchain/core": "^1.2.1",
     "@langchain/google-genai": "^2.2.0",
+    "@langchain/textsplitters": "^1.0.1",
     "@prisma/client": "^5.22.0",
     "@tavily/core": "^0.7.6",
     "axios": "^1.7.9",
@@ -35,7 +35,6 @@
     "helmet": "^8.0.0",
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.3",
-    "langchain": "^1.5.2",
     "lodash": "^4.17.21",
     "morgan": "^1.10.0",
     "node-cron": "^4.5.0",
