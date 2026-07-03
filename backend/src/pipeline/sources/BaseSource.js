@@ -1,4 +1,4 @@
-const { BaseImporter } = require('../../services/etl/base');
+const BaseImporter = require('../../services/etl/base');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const striptags = require('striptags');
