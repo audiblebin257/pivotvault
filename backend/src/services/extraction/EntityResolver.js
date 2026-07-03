@@ -22,9 +22,9 @@ class EntityResolver {
     const existing = await this.prisma.company.findFirst({
       where: {
         OR: [
-          { name: { equals: extractedCompany.name, mode: 'insensitive' },
+          { name: { equals: extractedCompany.name, mode: 'insensitive' } },
           { websiteUrl: extractedCompany.websiteUrl },
-          { alternativeNames: { has: normalizedName }
+          { alternativeNames: { has: normalizedName } }
         ]
       }
     });
