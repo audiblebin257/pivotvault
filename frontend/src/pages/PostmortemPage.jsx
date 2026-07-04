@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Building2, Globe, Users, DollarSign, Calendar, Clock, 
@@ -21,29 +21,88 @@ import { getDocumentaryData } from '../lib/documentaryData';
 
 const PostmortemPage = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [startup, setStartup] = React.useState(null);
   const [similar, setSimilar] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [enriching, setEnriching] = React.useState(false);
+  const [enrichStep, setEnrichStep] = React.useState('Searching SEC EDGAR...');
   const [activeAiTab, setActiveAiTab] = React.useState('overview');
   const [activeAutopsyTab, setActiveAutopsyTab] = React.useState('strategic');
 
+  const ENRICH_STEPS = [
+    'Searching SEC EDGAR...',
+    'Resolving company identity...',
+    'Downloading filings...',
+    'Extracting financials...',
+    'Running AI analysis...',
+    'Building knowledge graph...',
+    'Generating embeddings...',
+    'Finalizing postmortem...',
+  ];
+
   React.useEffect(() => {
+    let pollTimer = null;
+    let stepTimer = null;
+    let stepIdx = 0;
+
     const fetchData = async () => {
-      setLoading(true);
       try {
         const [res, resSim] = await Promise.all([
           api.get(`/startups/${slug}`),
-          api.get(`/startups/${slug}/similar`)
+          api.get(`/startups/${slug}/similar`).catch(() => ({ data: [] })),
         ]);
+
+        // 202 means enrichment is running — start polling
+        if (res.data?.enriching) {
+          setEnriching(true);
+          setLoading(false);
+
+          // Cycle through step labels every 3s for UX feedback
+          stepTimer = setInterval(() => {
+            stepIdx = (stepIdx + 1) % ENRICH_STEPS.length;
+            setEnrichStep(ENRICH_STEPS[stepIdx]);
+          }, 3000);
+
+          // Poll every 6 seconds until the company appears
+          pollTimer = setInterval(async () => {
+            try {
+              const poll = await api.get(`/startups/${slug}`);
+              if (poll.data && !poll.data.enriching) {
+                clearInterval(pollTimer);
+                clearInterval(stepTimer);
+                setStartup(poll.data);
+                setSimilar(poll.data.similar || []);
+                setEnriching(false);
+                if (poll.data.slug && poll.data.slug !== slug) {
+                  navigate(`/startup/${poll.data.slug}`, { replace: true });
+                }
+              }
+            } catch {/* keep polling */}
+          }, 6000);
+
+          return;
+        }
+
         setStartup(res.data);
         setSimilar(res.data.similar || resSim.data || []);
+        if (res.data && res.data.slug && res.data.slug !== slug) {
+          navigate(`/startup/${res.data.slug}`, { replace: true });
+        }
       } catch (err) {
-        console.error("Failed to fetch startup postmortem:", err);
+        console.error('Failed to fetch startup postmortem:', err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
+
+    return () => {
+      if (pollTimer) clearInterval(pollTimer);
+      if (stepTimer) clearInterval(stepTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   if (loading) {
@@ -54,7 +113,33 @@ const PostmortemPage = () => {
       </div>
     );
   }
-  
+
+  // Enrichment in progress — show a live pipeline status screen
+  if (enriching) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center px-4">
+        <div className="max-w-md w-full pv-card p-10 text-center">
+          <div className="w-16 h-16 border-4 border-border border-t-accent rounded-full animate-spin mx-auto mb-6" />
+          <div className="text-xs font-bold uppercase tracking-widest text-accent mb-2">
+            PivotVault Intelligence Engine
+          </div>
+          <h2 className="text-xl font-display font-bold text-text-primary mb-2">
+            Building Postmortem
+          </h2>
+          <p className="text-text-secondary text-sm mb-6">
+            This company isn't in our database yet. We're fetching SEC filings, running AI extraction, and generating a full postmortem. This takes about 30–60 seconds.
+          </p>
+          <div className="bg-surface-2 border border-border rounded-lg px-4 py-3 text-sm font-data text-accent animate-pulse">
+            {enrichStep}
+          </div>
+          <p className="text-xs text-text-muted mt-4">
+            The page will update automatically when ready.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!startup) {
     return (
       <div className="py-40 text-center max-w-md mx-auto">
@@ -160,7 +245,15 @@ const PostmortemPage = () => {
 
   return (
     <div className="pb-24 bg-bg text-text-primary selection:bg-accent/30 selection:text-white">
-      
+
+      {/* Sparse data notice for freshly-imported companies */}
+      {!startup.aiAnalyses?.length && (
+        <div className="bg-accent/5 border-b border-accent/20 px-4 py-2.5 text-center text-xs font-semibold text-accent">
+          <Sparkles className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
+          This company was recently imported. AI analysis and deeper insights are being generated in the background — refresh in a moment for the full postmortem.
+        </div>
+      )}
+
       {/* Cinematic Header / Hero */}
       <div className="border-b border-border/60 bg-surface/20 pt-16 pb-16 relative overflow-hidden">
         {/* Glow Effects */}

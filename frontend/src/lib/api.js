@@ -168,22 +168,32 @@ const mockApiHandler = async (config) => {
     };
   }
   
-  // Mock /graph/edges endpoint
-  if (url.includes('/graph/edges')) {
+  // Mock /graph/data endpoint
+  if (url.includes('/graph/data')) {
     return {
       data: {
         nodes: [
-          { id: '1', name: 'Juicero', type: 'startup' },
-          { id: '2', name: 'Theranos', type: 'startup' },
-          { id: '3', name: 'No PMF', type: 'failure_reason' },
-          { id: '4', name: 'Unit Economics', type: 'failure_reason' },
-          { id: 'shutdown', name: 'Shutdown', type: 'shutdown' }
+          { id: 'juicero', label: 'Juicero', type: 'COMPANY', slug: 'juicero', industry: 'Consumer Hardware', status: 'failed', group: 1 },
+          { id: 'theranos', label: 'Theranos', type: 'COMPANY', slug: 'theranos', industry: 'Health Tech', status: 'failed', group: 1 },
+          { id: 'wework', label: 'WeWork', type: 'COMPANY', slug: 'wework', industry: 'Real Estate', status: 'failed', group: 1 },
+          { id: 'quibi', label: 'Quibi', type: 'COMPANY', slug: 'quibi', industry: 'Media / Entertainment', status: 'failed', group: 1 },
+          { id: 'hardware', label: 'Consumer Hardware', type: 'INDUSTRY', group: 2 },
+          { id: 'healthtech', label: 'Health Tech', type: 'INDUSTRY', group: 2 },
+          { id: 'realestate', label: 'Real Estate', type: 'INDUSTRY', group: 2 },
+          { id: 'media', label: 'Media / Entertainment', type: 'INDUSTRY', group: 2 },
+          { id: 'pmf', label: 'No PMF', type: 'FAILURE_PATTERN', group: 9 },
+          { id: 'unit_economics', label: 'Unit Economics', type: 'FAILURE_PATTERN', group: 9 },
+          { id: 'cash_burn', label: 'Fatal Cash Burn', type: 'FAILURE_PATTERN', group: 9 }
         ],
         links: [
-          { source: '1', target: '4', weight: 2 },
-          { source: '2', target: '3', weight: 3 },
-          { source: '3', target: 'shutdown', weight: 1 },
-          { source: '4', target: 'shutdown', weight: 1 }
+          { source: 'juicero', target: 'hardware', value: 2 },
+          { source: 'juicero', target: 'unit_economics', value: 3 },
+          { source: 'theranos', target: 'healthtech', value: 2 },
+          { source: 'theranos', target: 'pmf', value: 3 },
+          { source: 'wework', target: 'realestate', value: 2 },
+          { source: 'wework', target: 'cash_burn', value: 3 },
+          { source: 'quibi', target: 'media', value: 2 },
+          { source: 'quibi', target: 'pmf', value: 3 }
         ]
       }
     };

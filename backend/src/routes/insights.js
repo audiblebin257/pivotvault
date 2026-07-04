@@ -23,35 +23,35 @@ router.get('/', async (req, res, next) => {
         take: 10,
       }),
       // Yearly failure count
-      prisma.startup.groupBy({
+      prisma.company.groupBy({
         by: ['shutdownYear'],
         _count: { id: true },
         where: { shutdownYear: { not: null } },
         orderBy: { shutdownYear: 'asc' },
       }),
       // Top viewed (use lifetime months as proxy)
-      prisma.startup.findMany({
+      prisma.company.findMany({
         orderBy: { lifetimeMonths: 'desc' },
         take: 5,
         select: { name: true, slug: true, industry: true, lifetimeMonths: true },
       }),
       // Industry breakdown
-      prisma.startup.groupBy({
+      prisma.company.groupBy({
         by: ['industry'],
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
         take: 10,
       }),
       // Total failed startups count
-      prisma.startup.count(),
+      prisma.company.count(),
       // Total funding lost
-      prisma.startup.aggregate({
+      prisma.company.aggregate({
         _sum: {
           fundingInr: true,
         },
       }),
       // Fastest startup collapse
-      prisma.startup.findFirst({
+      prisma.company.findFirst({
         where: {
           lifetimeMonths: { not: null, gt: 0 },
         },
@@ -72,7 +72,7 @@ router.get('/', async (req, res, next) => {
         },
       }),
       // Death Zones (High failure industries with low average lifetime)
-      prisma.startup.groupBy({
+      prisma.company.groupBy({
         by: ['industry'],
         _count: { id: true },
         _avg: { lifetimeMonths: true },

@@ -140,6 +140,53 @@ const calculateRiskFactors = (startup) => {
   return { factors: categories, totalScore: Math.min(99, totalScore) };
 };
 
+// Phase 6: Transparent Failure Score breakdown.
+// Maps the 8 weighted diagnostic vectors into 6 human-readable buckets whose
+// max points are (Σ weights in bucket × 100), so each bucket's points
+// (Σ score × weight) can never exceed its max and all points sum to the total.
+const SCORE_BREAKDOWN_MAP = [
+  { name: 'Financial Health', max: 20, ids: ['finance'] },
+  { name: 'Product Execution', max: 25, ids: ['product', 'execution'] },
+  { name: 'Market Fit', max: 15, ids: ['marketFit'] },
+  { name: 'Leadership', max: 15, ids: ['leadership'] },
+  { name: 'External Factors', max: 15, ids: ['competition', 'growth'] },
+  { name: 'Timing', max: 10, ids: ['timing'] },
+];
+
+const getScoreBreakdown = (factors, totalScore) => {
+  const byId = Object.fromEntries(factors.map((f) => [f.id, f]));
+  const rows = SCORE_BREAKDOWN_MAP.map((bucket) => {
+    const contribution = bucket.ids.reduce((sum, id) => {
+      const f = byId[id];
+      return sum + (f ? f.score * f.weight : 0);
+    }, 0);
+    const points = Math.min(Math.round(contribution), bucket.max);
+    const bucketFactors = bucket.ids.map((id) => byId[id]).filter(Boolean);
+    const top = [...bucketFactors].sort((a, b) => b.score - a.score)[0];
+    const why = top?.explanation?.[0] || '';
+    return { name: bucket.name, points, max: bucket.max, why };
+  });
+
+  // Reconcile per-bucket rounding so the rows sum EXACTLY to the headline
+  // totalScore (single source of truth). Absorb the delta into the bucket with
+  // the most remaining headroom, never exceeding its max or going below 0.
+  if (typeof totalScore === 'number') {
+    let delta = totalScore - rows.reduce((s, r) => s + r.points, 0);
+    while (delta !== 0) {
+      const step = delta > 0 ? 1 : -1;
+      const candidate = rows
+        .filter((r) => (step > 0 ? r.points < r.max : r.points > 0))
+        .sort((a, b) => (step > 0 ? (b.max - b.points) - (a.max - a.points) : b.points - a.points))[0];
+      if (!candidate) break;
+      candidate.points += step;
+      delta -= step;
+    }
+  }
+
+  const total = rows.reduce((s, r) => s + r.points, 0);
+  return { rows, total };
+};
+
 const getOverallWhy = (factors, startup) => {
   const topFactors = [...factors].sort((a, b) => b.score - a.score).slice(0, 2);
   let explanationStr = `This startup dissolved primarily due to severe vulnerability in **${topFactors[0].name}** and **${topFactors[1].name}**.`;
@@ -205,6 +252,7 @@ const FailureRiskIndex = ({ startup }) => {
   const [expandedId, setExpandedId] = useState(null);
   const [showMath, setShowMath] = useState(false);
   const { factors, totalScore } = calculateRiskFactors(startup);
+  const breakdown = getScoreBreakdown(factors, totalScore);
   const scoreConfig = getScoreConfig(totalScore);
   const confidence = startup.aiAnalyses?.[0]?.confidence || 88;
 
@@ -233,6 +281,37 @@ const FailureRiskIndex = ({ startup }) => {
             scoreConfig.color
           )}>
             {scoreConfig.label}
+          </div>
+        </div>
+
+        {/* Phase 6: Transparent Failure Score Breakdown */}
+        <div className="mb-8 border border-border/40 rounded-2xl p-5 bg-surface-3/20">
+          <div className="text-[10px] uppercase tracking-[0.15em] text-text-muted font-bold mb-4 flex items-center gap-2">
+            <Calculator className="w-3.5 h-3.5 text-accent" /> Failure Score Breakdown
+          </div>
+          <div className="space-y-3">
+            {breakdown.rows.map((row) => (
+              <div key={row.name}>
+                <div className="flex items-baseline gap-2 text-sm">
+                  <span className="font-medium text-text-primary shrink-0">{row.name}</span>
+                  <span className="flex-1 border-b border-dotted border-border/50 translate-y-[-3px]" />
+                  <span className="font-data font-bold text-text-primary shrink-0">
+                    {row.points}
+                    <span className="text-text-muted font-normal">/{row.max}</span>
+                  </span>
+                </div>
+                {row.why && (
+                  <p className="text-[11px] text-text-muted leading-snug mt-1 pr-14">{row.why}</p>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-baseline gap-2 text-sm mt-4 pt-3 border-t border-border/60">
+            <span className="font-display font-black uppercase tracking-wider text-accent shrink-0">Total</span>
+            <span className="flex-1 border-b border-dotted border-border/50 translate-y-[-3px]" />
+            <span className={clsx('font-display font-black text-lg shrink-0', scoreConfig.color)}>
+              {breakdown.total}%
+            </span>
           </div>
         </div>
 

@@ -146,7 +146,7 @@ async function getSimilarStartupsFromDB(query, industry, count = 10) {
   if (!where.OR?.length) {
     delete where.OR;
   }
-  const startups = await prisma.startup.findMany({
+  const startups = await prisma.company.findMany({
     where,
     include: {
       failureReasons: true,
@@ -667,7 +667,7 @@ router.post('/risk-scan', riskScanLimiter, async (req, res, next) => {
       return res.json({ ...cached, cached: true });
     }
 
-    const similarStartups = await prisma.startup.findMany({
+    const similarStartups = await prisma.company.findMany({
       where: {
         OR: [
           { industry: { contains: input.industry, mode: 'insensitive' } },
@@ -763,7 +763,7 @@ router.post('/research', async (req, res, next) => {
     // ── 1. Fetch from local DB ──────────────────────────────────────────────
     const startups = await getSimilarStartupsFromDB(query, '', 20);
 
-    const failedCount = await prisma.startup.count({
+    const failedCount = await prisma.company.count({
       where: { status: 'failed' },
     });
 
@@ -969,7 +969,7 @@ router.post('/autopsy', async (req, res, next) => {
     }
 
     // 1. Fetch failure patterns from DB
-    const historicalFailures = await prisma.startup.findMany({
+    const historicalFailures = await prisma.company.findMany({
       where: { industry: { contains: industry || '', mode: 'insensitive' } },
       include: { failureReasons: true, timelineEvents: true },
       take: 10
@@ -1054,7 +1054,7 @@ router.post('/ghost-chat', async (req, res, next) => {
     }
 
     // 1. Fetch startup from DB
-    const startup = await prisma.startup.findUnique({
+    const startup = await prisma.company.findUnique({
       where: { slug },
       include: {
         failureReasons: true,
@@ -1155,7 +1155,7 @@ Founder:`;
     // Try to fetch startup for fallback even if main route failed
     let startup = null;
     try {
-      startup = await prisma.startup.findUnique({
+      startup = await prisma.company.findUnique({
         where: { slug: req.body?.slug },
         include: { failureReasons: true, timelineEvents: true }
       });

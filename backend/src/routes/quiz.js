@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
   try {
     const count = Math.min(Math.max(parseInt(req.query.count, 10) || 5, 1), 10);
 
-    const startups = await prisma.startup.findMany({
+    const startups = await prisma.company.findMany({
       include: { failureReasons: true },
       take: 100,
     });

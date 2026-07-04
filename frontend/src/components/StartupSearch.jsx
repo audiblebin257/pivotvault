@@ -34,14 +34,35 @@ export default function StartupSearch() {
     navigate(`/startup/${slug}`);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const trimmed = query.trim();
+      if (!trimmed) return;
+
+      const exactMatch = results.find(
+        (s) => s.name.toLowerCase() === trimmed.toLowerCase() || s.slug === trimmed.toLowerCase()
+      );
+      if (exactMatch) {
+        handleSelect(exactMatch.slug);
+      } else if (results.length > 0) {
+        handleSelect(results[0].slug);
+      } else {
+        const slug = trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        handleSelect(slug);
+      }
+    }
+  };
+
   return (
     <div className="relative w-full max-w-md">
       <SearchInput
         placeholder="Search startups..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleKeyDown}
       />
-      {results.length > 0 && (
+      {(results.length > 0 || (query.trim() && !loading)) && (
         <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-border bg-surface shadow-elevated">
           {results.map((s) => (
             <button
@@ -53,6 +74,15 @@ export default function StartupSearch() {
               <span className="text-xs text-text-muted ml-2">({s.industry})</span>
             </button>
           ))}
+          {query.trim() && (
+            <button
+              onClick={() => handleSelect(query.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
+              className="w-full text-left px-4 py-3 text-sm text-accent hover:bg-surface-2 border-t border-border flex items-center gap-2 font-medium"
+            >
+              <span>✨</span>
+              <span>Search web &amp; generate report for "{query}"</span>
+            </button>
+          )}
         </div>
       )}
       {loading && (

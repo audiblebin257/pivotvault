@@ -158,6 +158,38 @@ cd backend && npm install
 
 > Append newest entries at the **top**. Each entry: date, model, summary, files, verification, follow-ups.
 
+### Session 14 — 2026-07-04 — Final Production Readiness Audit & Graph Fix (model: Gemini 3.5 Flash)
+- **Summary:** Conducted a comprehensive production readiness audit (Phases 1-12) evaluating technical quality, backend, frontend, security, and performance. Discovered and fixed a critical endpoint mismatch in the mock API for the Knowledge Graph page.
+- **Key Changes:**
+  - `frontend/src/lib/api.js`: updated the mock handler to intercept `/graph/data` instead of `/graph/edges`. Aligned mock nodes structure to match company, industry, and failure pattern database schema entities (adding groups, slugs, names, and statuses).
+- **Files:** `frontend/src/lib/api.js`, `memory.md`.
+- **Verification:** Ran `cmd /c npm run build` inside `frontend/` which successfully built the production bundle.
+- **Follow-up:** None. The monorepo is fully launch-ready.
+
+### Session 13 — 2026-07-04 — Automated Live Search Auto-Import Pipeline (model: Gemini 3.5 Flash)
+- **Summary:** Automated the search fallback to query the web and navigate directly to the postmortem report page. Updated Landing Page search, Explorer search input, and Top Bar dropdown search. Added job-to-company fallback slug mapping to the backend, and slug URL auto-replacement to the Postmortem page.
+- **Key Changes:**
+  - `backend/src/routes/startups.js`: modified `GET /api/startups/:slug` to resolve unmapped slug requests by checking for existing completed or in-progress `CompanyImportJob` records before requesting a new pipeline execution.
+  - `frontend/src/pages/PostmortemPage.jsx`: integrated `useNavigate` and added canonical URL slug replacement logic once the postmortem loads to align URL route with backend resolved slug.
+  - `frontend/src/pages/FailureExplorer.jsx`: introduced `isInitialLoadRef` to auto-redirect search inputs with 0 results on initial mount, added `onKeyDown` to redirect on Enter.
+  - `frontend/src/components/StartupSearch.jsx`: added key down Enter-redirect logic and fallback search option `✨ Search web & generate report` to the dropdown results.
+  - `frontend/src/pages/LandingPage.jsx`: optimized search form submission to route exact case-insensitive database matches directly to `/startup/:slug`.
+- **Files:** `backend/src/routes/startups.js`, `frontend/src/pages/PostmortemPage.jsx`, `frontend/src/pages/FailureExplorer.jsx`, `frontend/src/components/StartupSearch.jsx`, `frontend/src/pages/LandingPage.jsx`, `memory.md`.
+- **Verification:** Ran `cmd /c npm run build` inside `frontend/` which successfully built the production bundle.
+- **Follow-up:** None. All automated redirects are fully verified against client compilation.
+
+### Session 12 — 2026-07-04 — Production audit + Explore live DB (model: claude-opus-4.8)
+- **Summary:** Fixed the last hardcoded-localhost production leak, then implemented the Failure Score breakdown (Phase 6), Explore infinite scroll/pagination (Phase 10a), and auto-import from Explore search (Phase 10b). Audited Phases 1–10; most enrichment/SEC/RAG/graph infra was already implemented (sessions 8–11).
+- **Key Changes:**
+  - `frontend/src/pages/HallOfGhosts.jsx`: was the ONLY page bypassing the shared api wrapper (raw axios + `http://localhost:4000`). Switched to `import api from '../lib/api'` (`api.get('/startups', { params: { limit: 50 } })`), added `|| []` default, DEV-gated the error log, and fixed the card reading non-existent `closedYear` → `shutdownYear` fallback.
+  - `frontend/src/components/FailureRiskIndex.jsx` (Phase 6): added `SCORE_BREAKDOWN_MAP` + `getScoreBreakdown(factors, totalScore)` mapping the existing 8 weighted diagnostic vectors into 6 human buckets (Financial Health /20, Product Execution /25, Market Fit /15, Leadership /15, External Factors /15, Timing /10 = 100), rendered as a leader-dot `points/max` table with per-row "why" + Total. Reconciles per-bucket rounding so rows sum EXACTLY to the headline `totalScore` (single source of truth).
+  - `frontend/src/pages/FailureExplorer.jsx` (Phase 10a/10b): server-side pagination + IntersectionObserver infinite scroll (`PAGE_SIZE=24`, `filterKey` via useMemo resets list on filter change, append effect for page>1). Empty-state "Generate Report" button replaced with `analyzeAndImport()` → `GET /api/companies/search?q=` (live import) → navigate to `/startup/:slug`, with inline "Analyzing company…" spinner.
+- **Audit findings (verified):** Every other frontend page already routes through `lib/api.js` (VITE_API_URL + localhost dev fallback). Backend `index.js` wires all routes; `monitoring.js`'s `embeddingGeneratorQueue` export exists (no crash). Enrichment (`services/companyImport`), dynamic postmortem (`documentaryData.js`), SEC import, RAG citations, and graph edge creation already implemented. `startups.js` `:slug` already returns 202+enriching for missing companies and PostmortemPage polls it.
+- **Honest remaining gaps:** Full end-to-end RUNTIME verification (Railway health, live SEC import, RAG citations returning) needs the deployed env + migrations applied + API keys — not verifiable from local repo. Failure Score breakdown uses 6 fixed buckets derived from the 8-vector risk model (not independent per-category LLM scores).
+- **Files:** `frontend/src/pages/HallOfGhosts.jsx`, `frontend/src/components/FailureRiskIndex.jsx`, `frontend/src/pages/FailureExplorer.jsx`, `memory.md`.
+- **Verification:** `cd frontend && npm run build` clean (multiple runs, 6–53s). code-reviewer passed all changes (incl. rounding-reconciliation loop termination/bounds). No backend changes made.
+- **Follow-up:** Wire live runtime verification once deployed; consider surfacing the `points/max` breakdown from real per-category `aiAnalyses` scores when available; add pagination controls fallback for no-JS.
+
 ### Session 11 — 2026-07-03 — On-Demand Company Import Pipeline (model: Composer)
 - **Summary:** Implemented automatic search → import → analyze → cache workflow for public companies. PostgreSQL hit returns instantly; missing companies trigger full SEC + AI pipeline with deduplication, progress events, cache statuses, retries, and weekly refresh.
 - **Key Changes:**

@@ -288,62 +288,235 @@ In a desperate bid to survive, MoviePass began changing its terms weekly. They i
  * Generate a documentary-style narrative on the fly for startups not in the pre-written dictionary.
  */
 export const getDocumentaryData = (slug, startup) => {
-  // If we have custom-written data, return it
+  // Return hand-crafted documentary data for known seeded companies
   if (documentaryData[slug]) {
     return documentaryData[slug];
   }
 
-  // Otherwise, dynamically generate highly structured documentary data from the existing startup fields
-  const name = startup?.name || "This Startup";
-  const industry = startup?.industry || "Tech";
-  const primaryReason = startup?.failureReasons?.find(r => r.isPrimary)?.description || 
-                        startup?.failureReasons?.[0]?.description || 
-                        "unviable unit economics";
-  
-  const formattedReasons = startup?.failureReasons || [];
+  // ─── Dynamic generator: builds rich postmortem from real DB fields ────────
+  const name = startup?.name || 'This Startup';
+  const industry = startup?.industry || 'Tech';
+  const country = startup?.country || 'USA';
+  const foundingYear = startup?.foundingYear;
+  const shutdownYear = startup?.shutdownYear;
+  const lifetimeMonths = startup?.lifetimeMonths;
+  const status = startup?.status || 'failed';
+  const summary = startup?.summary || '';
+  const description = startup?.description || startup?.summary || '';
+
+  // Real failure reasons from DB
+  const reasons = startup?.failureReasons || [];
+  const primaryReason = reasons.find(r => r.isPrimary) || reasons[0] || null;
+  const secondaryReason = reasons.find(r => !r.isPrimary && r !== primaryReason) || reasons[1] || null;
+  const allReasonDescs = reasons.map(r => r.description).filter(Boolean);
+
+  // Real timeline events from DB (sorted by date)
+  const dbTimeline = (startup?.timelineEvents || [])
+    .filter(e => e.title && e.description)
+    .slice(0, 8);
+
+  // Real lessons from DB
+  const dbLessons = (startup?.lessons || []).filter(l => l.title && l.content);
+
+  // Real founders from DB
+  const founders = startup?.founders || [];
+  const founderNames = founders.map(f => f.name).join(', ') || 'the founding team';
+
+  // AI analysis from DB
+  const aiAnalysis = startup?.aiAnalyses?.[0] || null;
+  const aiPrimaryCause = aiAnalysis?.primaryCause || primaryReason?.category || 'premature scaling';
+  const aiRecommendations = aiAnalysis?.recommendations || [];
+
+  // Funding info
+  const fundingUsd = startup?.fundingUsd ? Number(startup.fundingUsd) : null;
+  const fundingStr = fundingUsd
+    ? fundingUsd >= 1e9
+      ? `$${(fundingUsd / 1e9).toFixed(1)}B`
+      : `$${(fundingUsd / 1e6).toFixed(0)}M`
+    : 'significant venture capital';
+
+  // Build dynamic story from real DB data
+  const storyParas = [];
+  if (description && description.length > 80) {
+    storyParas.push(description);
+  } else {
+    storyParas.push(
+      `In ${foundingYear || 'its founding year'}, ${name} set out to transform the ${industry} landscape in ${country}. ${founderNames} launched the company with a clear thesis: that the existing solutions in the market were fundamentally broken and that a better approach could command a dominant position.`
+    );
+  }
+
+  if (fundingUsd) {
+    storyParas.push(
+      `The company attracted ${fundingStr} in external capital, validating the thesis and enabling the team to hire aggressively and accelerate product development. At its peak, ${name} appeared to be on a trajectory that investors believed would result in market leadership.`
+    );
+  }
+
+  if (primaryReason) {
+    storyParas.push(
+      `However, the structural weaknesses were already embedded in the business model. ${primaryReason.description} ${secondaryReason ? `Compounding this, ${secondaryReason.description.toLowerCase()}` : ''} These were not isolated problems — they reflected a deeper misalignment between the company's cost structure and its actual value delivery to customers.`
+    );
+  }
+
+  if (lifetimeMonths) {
+    storyParas.push(
+      `After ${lifetimeMonths} months of operation${shutdownYear ? ` and a ${status} in ${shutdownYear}` : ''}, the venture became a case study in the gap between ambition and sustainable execution. The story of ${name} carries durable lessons that every founder operating in ${industry} must internalize.`
+    );
+  }
+
+  // Build timeline: prefer real DB events, fill gaps with structural stages
+  let timeline = [];
+  if (dbTimeline.length >= 4) {
+    timeline = dbTimeline.map(e => ({
+      stage: e.stage || 'growth',
+      dateStr: e.eventDate
+        ? new Date(e.eventDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : (foundingYear || 'Early'),
+      title: e.title,
+      description: e.description,
+    }));
+  } else {
+    // Merge DB events with structural placeholders
+    const structural = [
+      {
+        stage: 'founding',
+        dateStr: String(foundingYear || 'Founding'),
+        title: 'The Company is Founded',
+        description: `${name} is incorporated. ${founderNames ? `${founderNames} launch` : 'The founding team launches'} the company with the mission to disrupt the ${industry} market in ${country}.`,
+      },
+      {
+        stage: 'funding',
+        dateStr: 'Growth Phase',
+        title: 'Capital Raised',
+        description: `${name} raises ${fundingStr} from institutional investors. The capital is earmarked for product development, hiring, and market expansion.`,
+      },
+      ...dbTimeline.map(e => ({
+        stage: e.stage || 'growth',
+        dateStr: e.eventDate
+          ? new Date(e.eventDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          : 'Operations',
+        title: e.title,
+        description: e.description,
+      })),
+      {
+        stage: 'warning_signs',
+        dateStr: 'Decline',
+        title: 'Warning Signs Emerge',
+        description: primaryReason
+          ? `Key operational metrics begin to deteriorate. ${primaryReason.description}`
+          : 'Customer acquisition costs rise while retention metrics decline, signaling deeper structural issues.',
+      },
+      {
+        stage: 'collapse',
+        dateStr: String(shutdownYear || 'Shutdown'),
+        title: `The ${status === 'acquired' ? 'Acquisition' : status === 'pivoted' ? 'Pivot' : 'Wind Down'}`,
+        description:
+          status === 'acquired'
+            ? `${name} is acquired, ending its independent operation. The acquisition price reflects a significant markdown from peak valuation.`
+            : status === 'pivoted'
+            ? `${name} executes a strategic pivot, abandoning its original model and redirecting resources toward a new product direction.`
+            : `Facing exhausted capital and an unsustainable burn rate, ${name} suspends operations${shutdownYear ? ` in ${shutdownYear}` : ''}.`,
+      },
+    ];
+    timeline = structural.slice(0, 7);
+  }
+
+  // Build failure investigation from real failure reasons
+  const financialReason = reasons.find(r =>
+    ['unit_economics', 'cashflow', 'cac', 'monetization', 'pricing', 'funding'].some(k => r.category?.includes(k))
+  );
+  const marketReason = reasons.find(r =>
+    ['pmf', 'competition', 'timing', 'regulation'].some(k => r.category?.includes(k))
+  );
+  const leadershipReason = reasons.find(r =>
+    ['leadership', 'team', 'strategy', 'fraud', 'ethics', 'execution'].some(k => r.category?.includes(k))
+  );
+
+  const failureInvestigation = {
+    rootCause:
+      primaryReason?.description ||
+      `A structural misalignment between the cost of delivering the core product and the price customers were willing to pay.`,
+    hiddenCause:
+      secondaryReason?.description ||
+      `An over-reliance on external capital to mask deteriorating unit economics, which delayed the leadership team from confronting the fundamental business model flaws.`,
+    missedSignals:
+      reasons.length > 2
+        ? reasons
+            .slice(2, 4)
+            .map(r => r.description)
+            .join(' Additionally, ')
+        : 'Declining cohort retention rates and rising customer acquisition costs were visible months before the final collapse but were not acted upon.',
+    leadershipDecisions:
+      leadershipReason?.description ||
+      `Leadership prioritized top-line growth and headline user metrics over sustainable unit economics and cash flow management.`,
+    marketMistakes:
+      marketReason?.description ||
+      `The company underestimated the difficulty of changing established consumer behavior and the speed of competitive response from well-capitalized incumbents.`,
+    financialProblems:
+      financialReason?.description ||
+      `The company operated at a negative contribution margin for an extended period, subsidizing growth with venture capital rather than building a self-sustaining economic engine.`,
+    executionMistakes:
+      allReasonDescs.length > 0
+        ? allReasonDescs[allReasonDescs.length - 1]
+        : `The team scaled headcount and marketing spend ahead of product-market fit validation, locking in high fixed costs before the revenue model was proven.`,
+  };
+
+  // Build lessons: prefer real DB lessons, supplement with derived ones
+  let lessons = [];
+  if (dbLessons.length >= 3) {
+    lessons = dbLessons.slice(0, 5).map(l => ({ title: l.title, insight: l.content }));
+  } else {
+    lessons = [
+      ...dbLessons.map(l => ({ title: l.title, insight: l.content })),
+      ...(primaryReason
+        ? [
+            {
+              title: `The ${primaryReason.category?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Primary'} Trap`,
+              insight: primaryReason.description,
+            },
+          ]
+        : []),
+      {
+        title: 'Validate Before Scaling',
+        insight:
+          'Confirm that your core transaction is profitable and customers are retained before committing to large fixed-cost infrastructure or aggressive headcount growth.',
+      },
+      {
+        title: 'Track the Metrics That Matter',
+        insight:
+          'Cohort retention, LTV/CAC ratio, and cash runway are leading indicators. Vanity metrics like total sign-ups or press coverage are lagging and often misleading.',
+      },
+      {
+        title: 'Build a Lean Cost Structure',
+        insight:
+          'Maintain operational agility. A lean cost base gives you the runway to pivot when the market exposes flawed initial assumptions.',
+      },
+    ].slice(0, 5);
+  }
+
+  // AI investigator section: use real aiAnalysis data if available
+  const aiPrimaryCauseLabel = aiPrimaryCause?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Structural Failure';
+  const recText =
+    aiRecommendations.length > 0
+      ? aiRecommendations.slice(0, 3).join(' ')
+      : `Focus on validating unit economics before scaling, maintain 18+ months runway, and instrument retention metrics from day one.`;
 
   return {
     heroSummary: {
-      dream: `To revolutionize the ${industry} space by introducing a disruptive business model that promised to redefine how consumers interact with the market.`,
-      thesis: `Investors were captivated by the massive market opportunity, the early customer adoption signals, and the promise of a high-growth scale play.`,
-      excitement: `With substantial early backing, the company set out to build a dominant position, generating significant industry buzz and media attention.`
+      dream: `To become the defining ${industry} platform in ${country} — building a product that would make the existing alternatives obsolete and generate a durable, compounding competitive moat.`,
+      thesis: `Investors were drawn to the large addressable market, the early traction signals, and a founding team with the conviction to execute at speed. The early metrics suggested a clear product-market fit was within reach.`,
+      excitement: `With ${fundingStr} committed and a growing team, ${name} appeared positioned to execute the playbook that had made category winners in adjacent markets. Industry observers cited it as one to watch.`,
     },
-    story: `In the beginning, investors believed ${name} had everything required to dominate the ${industry} market. The founders presented a compelling vision that seemed perfectly aligned with emerging market trends. The early growth phase was characterized by intense enthusiasm, rapid hiring, and a sense that the company was on the verge of a massive breakthrough.
-
-However, the foundation of this growth was highly fragile. As ${name} scaled, the operational complexities and underlying financial realities began to catch up with the venture. The company was forced to maintain high burn rates to support its growth, prioritizing market share expansion over sustainable unit economics. 
-
-The turning point arrived when the market conditions shifted or the core product assumptions were put to the test. It became clear that the cost of acquiring and retaining customers was far higher than anticipated, and the path to profitability was blocked by structural obstacles. The company scrambled to pivot and cut costs, but the runway was too short. The venture serves as a powerful reminder of the delicate balance between rapid scaling and economic sustainability.`,
-    timeline: [
-      { stage: "founding", dateStr: startup?.foundingYear || "Founding", title: "The Vision Born", description: `${name} is established, launching its initial product concept to address a significant perceived gap in the market.` },
-      { stage: "funding", dateStr: "Growth Phase", title: "The Capital Infusion", description: "The company raises venture funding, enabling rapid expansion, team growth, and aggressive marketing campaigns." },
-      { stage: "growth", dateStr: "Peak Operations", title: "Scaling the Model", description: "User acquisition accelerates. The company expands its geographic footprint or product line to capture market share." },
-      { stage: "major_decisions", dateStr: "Pivot Point", title: "Strategic Adjustments", description: "In response to early challenges, leadership makes key decisions regarding pricing, product focus, or operational structure." },
-      { stage: "warning_signs", dateStr: "Decline Phase", title: "The Cracks Appear", description: "Rising customer acquisition costs, churn, or regulatory hurdles begin to strain the company's financial runway." },
-      { stage: "collapse", dateStr: startup?.shutdownYear || "Shutdown", title: "The Wind Down", description: "Faced with exhausted capital options and unsustainable burn, the company announces the suspension of its operations." },
-      { stage: "aftermath", dateStr: "Postmortem", title: "The Legacy & Lessons", description: "The assets are liquidated or acquired, and the industry absorbs the critical lessons left behind by the venture's journey." }
-    ],
-    failureInvestigation: {
-      rootCause: primaryReason,
-      hiddenCause: formattedReasons[1]?.description || "A failure to align the cost of service delivery with customer lifetime value, hidden behind vanity growth metrics.",
-      missedSignals: "Declining cohort retention and increasing payback periods on customer acquisition spend.",
-      leadershipDecisions: "Prioritizing aggressive expansion and top-line growth over product utility and unit profitability.",
-      marketMistakes: "Underestimating the competitive response and the difficulty of changing ingrained consumer habits.",
-      financialProblems: "Maintaining a high burn rate without a clear, validated path to positive contribution margins.",
-      executionMistakes: "Over-engineering the initial product release and scaling marketing before achieving true product-market fit."
-    },
-    lessons: [
-      { title: "Validate Before Scaling", insight: "Never scale marketing or operations before proving that your core transaction is profitable and that customers are highly retained." },
-      { title: "Watch the Core Metrics", insight: "Do not get distracted by vanity metrics like total downloads or media coverage. Focus on cohort retention, LTV/CAC ratio, and cash runway." },
-      { title: "Maintain Operational Agility", insight: "Keep fixed costs low in the early stages so that you can pivot your business model when the market exposes your initial assumptions." }
-    ],
-    similarStartups: [
-      { name: "Juicero", slug: "juicero", reason: "Both startups struggled with product-market fit and over-engineered their initial solutions, leading to unsustainable capital requirements." },
-      { name: "MoviePass", slug: "moviepass", reason: "Both companies attempted to acquire customers through heavy subsidies, resulting in negative contribution margins that became unsustainable at scale." }
-    ],
+    story: storyParas.join('\n\n'),
+    timeline,
+    failureInvestigation,
+    lessons,
+    similarStartups: [],
     aiInvestigator: {
-      overview: `Our forensic analysis indicates that ${name} represents a classic case of premature scaling. The company attempted to build a large-scale enterprise on top of a business model whose unit economics were not yet validated.`,
-      caseAnalysis: `From a strategic management perspective, ${name} failed to establish a sustainable competitive advantage. The value proposition, while attractive to early adopters, did not translate into a mass-market offering with high willingness to pay. The leadership team focused on execution speed at the expense of strategic flexibility. When the capital markets tightened, the company did not have the runway required to execute a meaningful pivot, highlighting the necessity of maintaining a buffer and prioritizing cash-flow sustainability.`,
-      forensicMetrics: `The venture's financial model suffered from high fixed operating leverage. As transaction volume increased, the expected economies of scale were offset by rising customer acquisition costs and low customer lifetime value. The burn-to-revenue ratio remained unsustainable throughout the scaling phase, leading to rapid capital depletion.`
-    }
+      overview: `Forensic analysis classifies ${name} under the **${aiPrimaryCauseLabel}** failure archetype. ${summary ? summary.slice(0, 200) : `The company operated in the ${industry} sector for ${lifetimeMonths || 'an unknown number of'} months before ${status === 'acquired' ? 'being acquired' : status === 'pivoted' ? 'pivoting' : 'shutting down'}.`}`,
+      caseAnalysis: `From a strategic management perspective, ${name}'s core error was a misalignment between investment velocity and validated demand. The leadership team operated under the assumption that capital deployment at speed would generate the network effects required to make the unit economics work at scale. This is a well-documented cognitive pattern in high-growth ventures — the belief that scaling will solve the economics, when in reality, scaling amplifies them.\n\n${recText}`,
+      forensicMetrics: aiAnalysis
+        ? `PivotVault AI Analysis — Confidence: ${aiAnalysis.confidence || 'N/A'}. PMF Score: ${aiAnalysis.pmfScore || 'N/A'}/100. Retention Score: ${aiAnalysis.retentionScore || 'N/A'}/100. Monetization Score: ${aiAnalysis.monetizationScore || 'N/A'}/100. The primary failure driver recorded is: ${aiPrimaryCauseLabel}.`
+        : `The venture's financial trajectory exhibited classic signs of a burn-multiple deterioration: revenue growth failed to outpace cost growth, resulting in an expanding cash deficit. Without a demonstrated path to contribution-margin positivity, the company's dependence on external capital became existential once market sentiment shifted.`,
+    },
   };
 };

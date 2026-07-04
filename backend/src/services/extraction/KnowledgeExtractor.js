@@ -157,7 +157,7 @@ async function callAI(prompt) {
 }
 
 class KnowledgeExtractor {
-  constructor({ llm = null, logger = console }) {
+  constructor({ llm = null, logger = console } = {}) {
     this.llm = llm;
     this.logger = logger;
   }

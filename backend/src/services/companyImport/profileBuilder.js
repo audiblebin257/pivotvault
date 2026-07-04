@@ -4,7 +4,7 @@
 
 const { PrismaClient } = require('@prisma/client');
 const KnowledgeExtractor = require('../extraction/KnowledgeExtractor');
-const { searchWeb } = require('../searchService');
+const { searchWeb, researchStartup } = require('../searchService');
 const graphService = require('../graph');
 const { secService } = require('../sec');
 const { padCik, looksLikeTicker } = require('../sec/util');
@@ -54,10 +54,16 @@ function buildSecContext(secCompany, intelligenceRows, financials, risks) {
   return parts.join('\n');
 }
 
-async function fetchFallbackWebContext(companyName) {
-  const results = await searchWeb(`${companyName} company business overview SEC public`, { maxResults: 5 });
-  if (!results.length) return '';
-  return results.map((r) => `${r.title}\n${r.content || r.snippet || ''}`).join('\n---\n');
+async function fetchWebEnrichmentContext(companyName) {
+  if (!companyName) return '';
+  // researchStartup runs multiple targeted queries (failure history, shutdown
+  // news, founder interviews/lessons) so private/failed-startup nuance that
+  // never appears in SEC filings is captured for the AI extractor.
+  const sources = await researchStartup(companyName);
+  if (!sources.length) return '';
+  return sources
+    .map((s) => `${s.title} (${s.publisher}${s.date ? `, ${s.date}` : ''})\n${s.summary || ''}`)
+    .join('\n---\n');
 }
 
 async function persistExtractedRelations(companyId, extracted) {
@@ -178,12 +184,14 @@ async function buildCompanyProfile({ secCompany, resolution, sourcesUsed }) {
   ]);
 
   let contextText = buildSecContext(secCompany, intelligenceRows, financials, risks);
-  if (contextText.length < 200) {
-    const webContext = await fetchFallbackWebContext(secCompany.name || resolution?.name);
-    if (webContext) {
-      contextText += `\n\nWeb sources:\n${webContext}`;
-      sourcesUsed.push('tavily_web');
-    }
+
+  // Always enrich with web/news context alongside SEC data (not just as a
+  // sparse-context fallback) so the postmortem captures founder lessons,
+  // failure narrative, and shutdown news that SEC filings omit.
+  const webContext = await fetchWebEnrichmentContext(secCompany.name || resolution?.name);
+  if (webContext) {
+    contextText += `\n\nWeb & news sources:\n${webContext}`;
+    if (!sourcesUsed.includes('tavily_web')) sourcesUsed.push('tavily_web');
   }
 
   const extractor = new KnowledgeExtractor();

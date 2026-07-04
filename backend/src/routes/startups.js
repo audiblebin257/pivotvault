@@ -2,6 +2,7 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { z } = require('zod');
 const { researchStartup } = require('../services/searchService');
+const companyImport = require('../services/companyImport');
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -98,10 +99,10 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// GET /api/startups/:slug - Full postmortem data
+// GET /api/startups/:slug - Full postmortem data (auto-enriches from SEC/web if not found)
 router.get('/:slug', async (req, res, next) => {
   try {
-    const startup = await prisma.company.findUnique({
+    let startup = await prisma.company.findUnique({
       where: { slug: req.params.slug },
       include: {
         failureReasons: { orderBy: { severityScore: 'desc' } },
@@ -114,8 +115,66 @@ router.get('/:slug', async (req, res, next) => {
       },
     });
 
+    // Auto-enrich: if the company doesn't exist, trigger background import
+    // and return a 202 Accepted with enriching status so the frontend can poll.
     if (!startup) {
-      return res.status(404).json({ error: 'Startup not found', code: 'NOT_FOUND' });
+      // Fallback: check if there is a completed import job for this slug/query
+      const dedupeKey = req.params.slug.toLowerCase().trim();
+      const job = await prisma.companyImportJob.findFirst({
+        where: {
+          OR: [
+            { dedupeKey },
+            { query: { equals: req.params.slug, mode: 'insensitive' } }
+          ]
+        },
+        include: {
+          company: {
+            include: {
+              failureReasons: { orderBy: { severityScore: 'desc' } },
+              timelineEvents: { orderBy: { eventDate: 'asc' } },
+              metricsSnapshots: { orderBy: { recordedMonth: 'asc' } },
+              aiAnalyses: true,
+              founders: true,
+              articles: true,
+              lessons: true,
+            }
+          }
+        }
+      });
+
+      if (job && job.company && job.status === 'READY') {
+        startup = job.company;
+      } else if (job && (job.status === 'PROCESSING' || job.status === 'UPDATING')) {
+        return res.status(202).json({
+          enriching: true,
+          slug: req.params.slug,
+          message: 'Company import is already processing. Poll again soon.',
+          code: 'ENRICHING',
+        });
+      } else {
+        // Fire-and-forget import so the request doesn't time out
+        companyImport.search(req.params.slug).catch(err =>
+          console.warn(`[Auto-enrich] background import failed for "${req.params.slug}":`, err.message)
+        );
+
+        return res.status(202).json({
+          enriching: true,
+          slug: req.params.slug,
+          message: 'Company not found — enrichment pipeline started. Poll this endpoint again in a few seconds.',
+          code: 'ENRICHING',
+        });
+      }
+    }
+
+    // If company exists but has very sparse data (recently imported with no AI analysis),
+    // kick off a background re-enrichment to fill gaps — respond immediately with what we have.
+    const isDataSparse =
+      !startup.aiAnalyses?.length &&
+      !startup.timelineEvents?.length &&
+      !startup.lessons?.length;
+
+    if (isDataSparse) {
+      companyImport.search(startup.name).catch(() => {/* best-effort */});
     }
 
     res.json({

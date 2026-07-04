@@ -26,13 +26,27 @@ const LandingPage = () => {
     fetchFeatured();
   }, []);
 
-  const handleSearch = (e, type) => {
+  const handleSearch = async (e, type) => {
     e?.preventDefault();
-    if (!search.trim()) return;
+    const trimmed = search.trim();
+    if (!trimmed) return;
     if (type === 'ai') {
-      navigate(`/assistant?q=${encodeURIComponent(search)}`);
+      navigate(`/assistant?q=${encodeURIComponent(trimmed)}`);
     } else {
-      navigate(`/explore?q=${encodeURIComponent(search)}`);
+      try {
+        const res = await api.get('/startups', { params: { q: trimmed } });
+        const startupsList = res.data?.data || res.data?.startups || [];
+        const exactMatch = startupsList.find(
+          (s) => s.name.toLowerCase() === trimmed.toLowerCase() || s.slug === trimmed.toLowerCase()
+        );
+        if (exactMatch) {
+          navigate(`/startup/${exactMatch.slug}`);
+          return;
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.error('Landing page search pre-check failed:', err);
+      }
+      navigate(`/explore?q=${encodeURIComponent(trimmed)}`);
     }
   };
 

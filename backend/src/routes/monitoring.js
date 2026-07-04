@@ -1,6 +1,6 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
-const { connection, ingestionQueue, syncQueue, embeddingQueue, retryQueue } = require('../pipeline/queues');
+const { connection, ingestionQueue, syncQueue, embeddingGeneratorQueue, retryQueue } = require('../pipeline/queues');
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     const queueCounts = {
       ingestion: (await ingestionQueue.getJobCounts()).waiting,
       sync: (await syncQueue.getJobCounts()).waiting,
-      embedding: (await embeddingQueue.getJobCounts()).waiting,
+      embedding: (await embeddingGeneratorQueue.getJobCounts()).waiting,
       retry: (await retryQueue.getJobCounts()).waiting
     };
 

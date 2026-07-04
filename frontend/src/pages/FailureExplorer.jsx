@@ -1,16 +1,24 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Filter, X, SlidersHorizontal, ArrowUpDown, ChevronDown, AlertTriangle } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Filter, X, SlidersHorizontal, ArrowUpDown, ChevronDown, AlertTriangle, Sparkles } from 'lucide-react';
 import StartupCard from '../components/StartupCard';
 import SearchInput from '../components/ui/SearchInput';
 import api from '../lib/api';
 
+const PAGE_SIZE = 24;
+
 const FailureExplorer = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [startups, setStartups] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [loadingMore, setLoadingMore] = React.useState(false);
   const [total, setTotal] = React.useState(0);
+  const [page, setPage] = React.useState(1);
+  const [analyzing, setAnalyzing] = React.useState(false);
   const [showMobileFilters, setShowMobileFilters] = React.useState(false);
+  const sentinelRef = React.useRef(null);
+  const isInitialLoadRef = React.useRef(true);
 
   const query = searchParams.get('q') || '';
   const industry = searchParams.get('industry') || '';
@@ -20,23 +28,103 @@ const FailureExplorer = () => {
   const sort = searchParams.get('sort') || 'name';
   const order = searchParams.get('order') || 'asc';
 
+  // A stable key of all filter params EXCEPT the page cursor, so we reset the
+  // list only when the actual filters/search change (not on pagination).
+  const filterKey = React.useMemo(() => {
+    const entries = Object.fromEntries(searchParams);
+    delete entries.page;
+    return new URLSearchParams(entries).toString();
+  }, [searchParams]);
+
+  const hasMore = startups.length < total;
+
+  // Reset + load the first page whenever the filters/search change.
   React.useEffect(() => {
-    const fetchStartups = async () => {
+    let cancelled = false;
+    setPage(1);
+    (async () => {
       setLoading(true);
       try {
-        const response = await api.get('/startups', {
-          params: Object.fromEntries(searchParams)
-        });
-        setStartups(response.data.data || []);
+        const params = { ...Object.fromEntries(searchParams), page: 1, limit: PAGE_SIZE };
+        const response = await api.get('/startups', { params });
+        if (cancelled) return;
+        
+        const data = response.data.data || [];
+        const totalCount = response.data.total || 0;
+        
+        setStartups(data);
+        setTotal(totalCount);
+
+        // Auto-redirect if 0 results and we have an initial query from URL
+        if (totalCount === 0 && query.trim() && isInitialLoadRef.current) {
+          const slug = query.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+          navigate(`/startup/${slug}`);
+        }
+        isInitialLoadRef.current = false;
+      } catch (err) {
+        if (import.meta.env.DEV) console.error('Fetch error:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey]);
+
+  // Append subsequent pages for infinite scroll.
+  React.useEffect(() => {
+    if (page === 1) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingMore(true);
+      try {
+        const params = { ...Object.fromEntries(searchParams), page, limit: PAGE_SIZE };
+        const response = await api.get('/startups', { params });
+        if (cancelled) return;
+        setStartups((prev) => [...prev, ...(response.data.data || [])]);
         setTotal(response.data.total || 0);
       } catch (err) {
         if (import.meta.env.DEV) console.error('Fetch error:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoadingMore(false);
       }
-    };
-    fetchStartups();
-  }, [searchParams]);
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  // IntersectionObserver drives the infinite scroll by advancing the page.
+  React.useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore || loading || loadingMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setPage((p) => p + 1);
+      },
+      { rootMargin: '400px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore]);
+
+  // Phase 10: when a searched company isn't in the archive, kick off the live
+  // import pipeline and hand off to the postmortem page (which polls the
+  // enrichment job and renders the full dynamic postmortem when ready).
+  const analyzeAndImport = async (name) => {
+    const q = String(name || '').trim();
+    if (!q) return;
+    setAnalyzing(true);
+    const fallbackSlug = q.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    try {
+      const res = await api.get('/companies/search', { params: { q } });
+      const data = res.data || {};
+      const slug = data.slug || data.profile?.company?.slug || fallbackSlug;
+      navigate(`/startup/${slug}`);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('Import failed:', err);
+      navigate(`/startup/${fallbackSlug}`);
+    }
+  };
 
   const handleFilterChange = (key, value) => {
     const newParams = new URLSearchParams(searchParams);
@@ -189,6 +277,17 @@ const FailureExplorer = () => {
               className="flex-1"
               value={query}
               onChange={(e) => handleFilterChange('q', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const trimmed = query.trim();
+                  if (!trimmed) return;
+                  if (total === 0) {
+                    const slug = trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                    navigate(`/startup/${slug}`);
+                  }
+                }
+              }}
             />
             <button
               onClick={() => setShowMobileFilters(true)}
@@ -265,37 +364,64 @@ const FailureExplorer = () => {
                 ))}
               </div>
             ) : startups.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {startups.map((startup) => (
-                  <StartupCard key={startup.id} {...startup} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {startups.map((startup) => (
+                    <StartupCard key={startup.id} {...startup} />
+                  ))}
+                </div>
+
+                {/* Infinite scroll sentinel + loading indicator */}
+                {hasMore && <div ref={sentinelRef} className="h-10" aria-hidden="true" />}
+                {loadingMore && (
+                  <div className="flex justify-center py-8" role="status" aria-live="polite">
+                    <div className="w-6 h-6 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
+                  </div>
+                )}
+                {!hasMore && total > PAGE_SIZE && (
+                  <div className="text-center text-xs text-text-muted py-8">
+                    You've reached the end — {total} companies in the archive.
+                  </div>
+                )}
+              </>
             ) : (
               <div className="pv-card p-12 text-center">
-                <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-text-primary mb-2">No results found</h3>
-                <p className="text-text-secondary text-sm mb-6 max-w-md mx-auto">
-                  {query ? "No startups match your search, but we can generate an AI analysis!" : "No startups match your current filters. Try adjusting your search or clearing filters."}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  {query && (
-                    <button
-                      onClick={() => {
-                        const slug = query.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                        window.location.href = `/startup/${slug}`;
-                      }}
-                      className="pv-btn-primary"
-                    >
-                      Generate Intelligence Report
-                    </button>
-                  )}
-                  <button
-                    onClick={clearAllFilters}
-                    className="pv-btn-secondary"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
+                {analyzing ? (
+                  <div role="status" aria-live="polite" className="flex flex-col items-center">
+                    <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-5" />
+                    <h3 className="text-lg font-semibold text-text-primary mb-2">Analyzing company…</h3>
+                    <p className="text-text-secondary text-sm max-w-md mx-auto">
+                      Importing SEC filings, running AI extraction, and building a full postmortem for
+                      <span className="font-semibold text-text-primary"> “{query}”</span>. This takes about 30–60 seconds.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-text-primary mb-2">No results found</h3>
+                    <p className="text-text-secondary text-sm mb-6 max-w-md mx-auto">
+                      {query
+                        ? "This company isn't in the archive yet — we can import it live from SEC EDGAR and generate a full intelligence report."
+                        : 'No startups match your current filters. Try adjusting your search or clearing filters.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      {query && (
+                        <button
+                          type="button"
+                          onClick={() => analyzeAndImport(query)}
+                          className="pv-btn-primary inline-flex items-center justify-center gap-2"
+                          aria-label={`Analyze and import ${query}`}
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          Analyze &amp; Import “{query}”
+                        </button>
+                      )}
+                      <button type="button" onClick={clearAllFilters} className="pv-btn-secondary">
+                        Clear all filters
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
