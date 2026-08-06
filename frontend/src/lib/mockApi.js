@@ -583,7 +583,7 @@ export { generateMockExternalSources };
 
 export const mockPitchDeckAutopsy = {
   overallRisk: 'Lethal',
-  pathologistVerdict: 'Your deck shows several red flags that mirror patterns from hundreds of failed startups.',
+  pathologistVerdict: 'Your deck shows several red flags that mirror patterns from 413 failed startups.',
   executiveSummary: 'You\'ve got a clear problem statement but are missing critical pieces like product-market fit validation and a sustainable GTM strategy. Focus on those before scaling.',
   strengths: [
     { title: 'Clear Problem Statement', description: 'You\'ve done a good job articulating the customer pain point.' },
