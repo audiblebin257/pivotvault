@@ -158,6 +158,34 @@ cd backend && npm install
 
 > Append newest entries at the **top**. Each entry: date, model, summary, files, verification, follow-ups.
 
+### Session 30 — 2026-08-07 — Firebase Environment Configuration Files (model: Gemini 3.6 Flash)
+- **Summary:** Created `frontend/.env` and `frontend/.env.example` with structured environment variable placeholders (`VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MEASUREMENT_ID`) for user configuration.
+- **Files:** `frontend/.env`, `frontend/.env.example`, `memory.md`.
+- **Verification:** Environment files created cleanly.
+- **Follow-up:** None.
+
+### Session 29 — 2026-08-07 — Full Firebase Ecosystem Migration & Scaffolding (model: Gemini 3.6 Flash)
+- **Summary:** Migrated and configured PivotVault to run on the Firebase platform:
+  - **Firebase Hosting**: Configured `firebase.json` for static Vite SPA deployment (`frontend/dist/`) with SPA rewrite rules (`/**` -> `/index.html`).
+  - **Firebase Cloud Functions**: Configured Express API export (`backend/src/firebaseFunction.js`) via `firebase-functions/v2/https`.
+  - **Firebase Auth**: Created `frontend/src/lib/firebase.js` and updated `AuthContext.jsx` to integrate Firebase Authentication (`signInWithEmailAndPassword`, `createUserWithEmailAndPassword`, `signInWithPopup` Google Auth) alongside mock demo auth.
+  - **Documentation & Operations**: Created `FIREBASE_SETUP.md` with complete setup, emulator testing, and deployment instructions. Updated root and backend `package.json` scripts (`deploy:firebase`, `emulate:firebase`).
+- **Files:** `firebase.json`, `.firebaserc`, `package.json`, `FIREBASE_SETUP.md`, `frontend/package.json`, `frontend/src/lib/firebase.js`, `frontend/src/context/AuthContext.jsx`, `backend/package.json`, `backend/src/firebaseFunction.js`, `backend/src/index.js`, `memory.md`.
+- **Verification:** `npm run build` in `frontend/` succeeded in 11.44s with zero compilation errors.
+- **Follow-up:** Update `.firebaserc` with active Firebase project ID when deploying.
+
+### Session 28 — 2026-08-07 — Backend & Frontend Dev Server Execution (model: Gemini 3.6 Flash)
+- **Summary:** Installed backend dependencies (`npm install`), generated Prisma client, and launched both backend (port 4000) and frontend Vite dev server (port 5173) as background tasks.
+- **Files:** `memory.md`.
+- **Verification:** Both backend and frontend servers launched successfully.
+- **Follow-up:** None.
+
+### Session 27 — 2026-08-07 — Git Code Pull & Verification (model: Gemini 3.6 Flash)
+- **Summary:** Pulled latest code from remote repository `https://github.com/audiblebin257/pivotvault.git` (`main` branch) and fast-forwarded workspace to commit `5cd0d78`. Configured remote `origin` to point to `https://github.com/audiblebin257/pivotvault.git`. Installed frontend dependencies and verified production build cleanly (`npm run build`).
+- **Files:** `memory.md`.
+- **Verification:** `npm run build` in `frontend/` succeeded in 10.09s with zero errors.
+- **Follow-up:** None.
+
 ### Session 26 — 2026-08-07 — Sign-in & Sign-up Navigation Safeguard Fix (model: Claude Opus 4.6 / Gemini 3.6 Flash)
 - **Summary:** Fixed sign-in and sign-up navigation flows:
   - Enabled `VITE_DEMO_MODE=true` in `frontend/.env` to ensure all API calls fall back to mock data cleanly without database connectivity dependencies.

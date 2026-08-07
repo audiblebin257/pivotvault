@@ -39,6 +39,8 @@ app.use(cors({
     if (
       !origin ||
       origin.includes("vercel.app") ||
+      origin.includes("web.app") ||
+      origin.includes("firebaseapp.com") ||
       origin === "https://pivotvault.netlify.app" ||
       origin === "http://localhost:5173"
     ) {

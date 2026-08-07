@@ -1,4 +1,12 @@
 {
+  "name": "pivotvault-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:frontend": "npm --prefix frontend run build",
+    "emulate:firebase": "npm run build:frontend && npx firebase emulators:start",
+    "deploy:firebase": "npm run build:frontend && npx firebase deploy"
+  },
   "dependencies": {
     "axios": "^1.18.1",
     "clsx": "^2.1.1",
