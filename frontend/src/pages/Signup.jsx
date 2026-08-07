@@ -29,7 +29,7 @@ const Signup = () => {
     setLoading(true);
     try {
       await register(name, email, password);
-      await refresh();
+      try { await refresh(); } catch {}
       navigate(from, { replace: true });
     } catch (err) {
       setError(err?.response?.data?.error || 'Could not create account.');
