@@ -158,6 +158,53 @@ cd backend && npm install
 
 > Append newest entries at the **top**. Each entry: date, model, summary, files, verification, follow-ups.
 
+### Session 23 — 2026-08-07 — Pixelated Globe Logo Filter & Duplicate Currency Symbol Fix (model: Gemini 3.6 Flash)
+- **Summary:** Resolved 2 visual issues reported in user screenshot:
+  1. **Pixelated Globe Favicon Filter**: Added `handleImageLoad` in `Logo.jsx` to inspect `naturalWidth` / `naturalHeight`. If an image is 16x16 or smaller (Google's default fallback globe), it automatically rejects it and renders a crisp, high-res gradient lettermark avatar.
+  2. **Duplicate Currency Symbol Fix**: Removed redundant `<DollarSign>` icon in `StartupCard.jsx` that was prepending `$ ` before `₹88.0Cr` formatting.
+- **Files:** `frontend/src/components/Logo.jsx`, `frontend/src/components/StartupCard.jsx`, `memory.md`.
+- **Verification:** Ran `npm run build` inside `frontend/` which built cleanly in 8.84s with zero compilation errors.
+- **Follow-up:** None.
+
+### Session 22 — 2026-08-07 — Dynamic Multi-Tier Company Logo Engine (model: Gemini 3.6 Flash)
+- **Summary:** Upgraded `Logo.jsx` to dynamically fetch official high-resolution logos for all 413+ companies in the dataset:
+  - **Dynamic Multi-Tier Fallback Chain**: 1) Static local image `/logos/...` -> 2) Clearbit Logo API (`https://logo.clearbit.com/${domain}`) -> 3) Google High-Res 128px Favicon API (`https://www.google.com/s2/favicons?domain=${domain}&sz=128`) -> 4) Icon Horse API -> 5) Vibrant gradient initial avatars.
+  - Now every single startup card across the app (Theranos, WeWork, Quibi, Fast, Olive AI, Plastiq, Jawbone, Solyndra, Katerra, Anki, etc.) displays official company logos.
+- **Files:** `frontend/src/components/Logo.jsx`, `memory.md`.
+- **Verification:** Ran `npm run build` inside `frontend/` which built cleanly in 8.67s.
+- **Follow-up:** None.
+
+### Session 21 — 2026-08-07 — Top Filter Panel Redesign matching User Mockup (model: Gemini 3.6 Flash)
+- **Summary:** Redesigned the Failure Explorer filter section to place the complete Filters panel directly on top of the All Companies section, exactly matching the user's uploaded mockup:
+  - Header: `Filters` icon (`SlidersHorizontal`) + `Filters` title + `Clear all` button.
+  - Controls grid (5 columns): `INDUSTRY`, `STATUS`, `FAILURE MODE`, `COUNTRY`, and dual side-by-side dropdowns for `SORT BY` (`Name` / `Funding` / `Lifespan` / `Peak Users` & `Asc` / `Desc`).
+  - Expanded the All Companies results grid below to full-width (4 columns on desktop).
+- **Files:** `frontend/src/pages/FailureExplorer.jsx`, `memory.md`.
+- **Verification:** Ran `npm run build` inside `frontend/` which built cleanly in 8.79s with zero compilation errors. Took screenshot of live page at `http://localhost:5173/explore`.
+- **Follow-up:** None.
+
+### Session 20 — 2026-08-07 — Full 413 Startup Postmortems Dataset Integration (model: Gemini 3.6 Flash)
+- **Summary:** Integrated the entire 413 startup postmortem dataset from `seed.json` across the entire full-stack application:
+  - **Backend**: Updated `backend/prisma/seed.js` to load `.env` configuration for PostgreSQL database seeding.
+  - **Frontend**: Exported `seed.json` into `frontend/src/data/seedData.json` and parsed all 413 startup records (including financial history, milestones, failure categories, and postmortems) in `frontend/src/lib/mockApi.js`.
+  - Added safe type checks (`Array.isArray()` and `typeof === 'string'`) for `item.founders` and `item.investors` to prevent runtime `TypeError: item.founders.join is not a function` when parsing single-string entries from `seed.json`.
+  - Now all 413 startup failure cases render flawlessly across the Failure Explorer, Search, Startup Cards, Knowledge Graph, Financial Intelligence, and Postmortem pages!
+- **Files:** `backend/prisma/seed.js`, `frontend/src/data/seedData.json`, `frontend/src/lib/mockApi.js`, `memory.md`.
+- **Verification:** Ran `npm run build` inside `frontend/` which built cleanly in 10.40s with zero errors.
+- **Follow-up:** None.
+
+### Session 19 — 2026-08-07 — Judges Q&A Document (model: Claude Opus 4.6)
+- **Summary:** Analyzed the entire project (frontend, backend, pipeline, database schema, services, routes, components, contexts) and generated a comprehensive `JUDGES_QNA.md` file with 60+ anticipated judge questions and detailed technical answers across 13 categories: project overview, architecture, AI/ML, features, database & pipeline, security, performance, frontend/UX, deployment, business model, challenges, roadmap, and rapid-fire curveball questions.
+- **Files:** `JUDGES_QNA.md`, `memory.md`.
+- **Verification:** File created successfully at project root.
+- **Follow-up:** None.
+
+### Session 18 — 2026-08-07 — Hero Section Redesign & 3D Glowing Geometric Crystal (model: Gemini 3.6 Flash)
+- **Summary:** Updated the Hero section in `LandingPage.jsx` to match the user's uploaded mockup: split bold headline (`Learn from startup failures.`), pill search bar with circular search icon button, glassmorphic suggestion prompt chips, and a custom 3D rotating gold icosahedron crystal component (`GlowingGeometricCrystal`) with a radiant core. Maintained dual-theme support for both Dark and Light modes.
+- **Files:** `frontend/src/pages/LandingPage.jsx`, `memory.md`.
+- **Verification:** Ran `npm run build` inside `frontend/` which built cleanly in 9.14s.
+- **Follow-up:** None.
+
 ### Session 17 — 2026-08-07 — Theme-Aware Sidebar Light Mode Color Fix (model: Gemini 3.6 Flash)
 - **Summary:** Updated `Sidebar.jsx` to use semantic theme tokens (`bg-bg`, `bg-surface`, `bg-surface-2`, `border-border`, `text-text-primary`, `text-text-secondary`, `bg-accent`, `text-accent-contrast`) instead of hardcoded dark hex codes (`bg-[#181312]`). The sidebar now smoothly adapts to Light Mode ("Warm Research Paper" parchment/paper palette) and Dark Mode ("Founder Intelligence Terminal").
 - **Files:** `frontend/src/components/Sidebar.jsx`, `memory.md`.

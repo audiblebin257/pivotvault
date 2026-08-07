@@ -265,11 +265,11 @@ const FailureExplorer = () => {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="pv-content-container py-12">
+      <div className="pv-content-container py-10">
         {/* Header */}
         <div className="mb-8">
           <div className="text-label uppercase text-text-muted mb-1">Explorer</div>
-          <h1 className="text-3xl font-display font-bold text-text-primary mb-6">Failure Archive</h1>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-text-primary mb-6">Failure Archive</h1>
           
           <div className="flex flex-col sm:flex-row gap-4">
             <SearchInput
@@ -289,142 +289,219 @@ const FailureExplorer = () => {
                 }
               }}
             />
-            <button
-              onClick={() => setShowMobileFilters(true)}
-              className="sm:hidden pv-btn-secondary flex items-center justify-center gap-2"
-            >
-              <Filter className="w-5 h-5" />
-              Filters
-            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-          {/* Sidebar */}
-          <aside className="hidden lg:block lg:col-span-1">
-            <div className="pv-card p-6 sticky top-24">
-              {sidebarContent}
+        {/* ================================================================
+           TOP FILTERS PANEL (Matching User Mockup)
+        ================================================================ */}
+        <div className="pv-card p-6 mb-8 border border-border bg-surface/95 rounded-2xl shadow-card">
+          <div className="flex items-center justify-between pb-4 mb-5 border-b border-border">
+            <div className="flex items-center gap-2.5">
+              <SlidersHorizontal className="w-4 h-4 text-accent" />
+              <span className="font-bold text-text-primary text-base">Filters</span>
             </div>
-          </aside>
-
-          {/* Results */}
-          <div className="lg:col-span-3">
-            <div className="mb-6 flex items-center justify-between text-sm text-text-secondary">
-              <div>
-                Showing <span className="font-semibold text-text-primary">{startups.length}</span> of <span className="font-semibold text-text-primary">{total}</span> results
-              </div>
-              {Object.keys(Object.fromEntries(searchParams)).length > 0 && (
-                <button 
-                  onClick={clearAllFilters}
-                  className="text-accent hover:underline font-medium"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="pv-card p-6 h-full flex flex-col animate-pulse">
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 rounded-lg bg-surface-2 border border-border" />
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="w-6 h-6 rounded-full bg-surface-2" />
-                        <div className="w-16 h-5 rounded-md bg-surface-2" />
-                      </div>
-                    </div>
-                    {/* Content */}
-                    <div className="flex-1 flex flex-col">
-                      <div className="w-3/4 h-6 rounded bg-surface-2 mb-2" />
-                      <div className="w-1/3 h-4 rounded bg-surface-2 mb-4" />
-                      <div className="space-y-2 mb-6">
-                        <div className="w-full h-3.5 rounded bg-surface-2" />
-                        <div className="w-full h-3.5 rounded bg-surface-2" />
-                        <div className="w-5/6 h-3.5 rounded bg-surface-2" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 py-3 border-y border-border/80 bg-surface-2/40 px-3 rounded-md mb-4">
-                        <div>
-                          <div className="w-16 h-3 rounded bg-surface-2 mb-1.5" />
-                          <div className="w-20 h-4 rounded bg-surface-2" />
-                        </div>
-                        <div>
-                          <div className="w-16 h-3 rounded bg-surface-2 mb-1.5" />
-                          <div className="w-12 h-4 rounded bg-surface-2" />
-                        </div>
-                      </div>
-                    </div>
-                    {/* Footer */}
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="w-32 h-4 rounded bg-surface-2" />
-                      <div className="w-4 h-4 rounded bg-surface-2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : startups.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {startups.map((startup) => (
-                    <StartupCard key={startup.id} {...startup} />
-                  ))}
-                </div>
-
-                {/* Infinite scroll sentinel + loading indicator */}
-                {hasMore && <div ref={sentinelRef} className="h-10" aria-hidden="true" />}
-                {loadingMore && (
-                  <div className="flex justify-center py-8" role="status" aria-live="polite">
-                    <div className="w-6 h-6 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
-                  </div>
-                )}
-                {!hasMore && total > PAGE_SIZE && (
-                  <div className="text-center text-xs text-text-muted py-8">
-                    You've reached the end — {total} companies in the archive.
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="pv-card p-12 text-center">
-                {analyzing ? (
-                  <div role="status" aria-live="polite" className="flex flex-col items-center">
-                    <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-5" />
-                    <h3 className="text-lg font-semibold text-text-primary mb-2">Analyzing company…</h3>
-                    <p className="text-text-secondary text-sm max-w-md mx-auto">
-                      Importing SEC filings, running AI extraction, and building a full postmortem for
-                      <span className="font-semibold text-text-primary"> “{query}”</span>. This takes about 30–60 seconds.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-text-primary mb-2">No results found</h3>
-                    <p className="text-text-secondary text-sm mb-6 max-w-md mx-auto">
-                      {query
-                        ? "This company isn't in the archive yet — we can import it live from SEC EDGAR and generate a full intelligence report."
-                        : 'No startups match your current filters. Try adjusting your search or clearing filters.'}
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      {query && (
-                        <button
-                          type="button"
-                          onClick={() => analyzeAndImport(query)}
-                          className="pv-btn-primary inline-flex items-center justify-center gap-2"
-                          aria-label={`Analyze and import ${query}`}
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          Analyze &amp; Import “{query}”
-                        </button>
-                      )}
-                      <button type="button" onClick={clearAllFilters} className="pv-btn-secondary">
-                        Clear all filters
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+            {Object.keys(Object.fromEntries(searchParams)).length > 0 && (
+              <button 
+                onClick={clearAllFilters}
+                className="text-xs font-semibold text-accent hover:underline"
+              >
+                Clear all
+              </button>
             )}
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+            {/* Industry */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">INDUSTRY</label>
+              <select 
+                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
+                value={industry}
+                onChange={(e) => handleFilterChange('industry', e.target.value)}
+              >
+                <option value="">All Industries</option>
+                {industries.map((ind) => (
+                  <option key={ind} value={ind}>{ind}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">STATUS</label>
+              <select 
+                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
+                value={status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="failed">Failed / Liquidated</option>
+                <option value="acquired">Acquired / Asset Sale</option>
+                <option value="pivoted">Pivoted / Rebranded</option>
+                <option value="zombie">Zombie State</option>
+              </select>
+            </div>
+
+            {/* Failure Mode */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">FAILURE MODE</label>
+              <select 
+                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
+                value={category}
+                onChange={(e) => handleFilterChange('category', e.target.value)}
+              >
+                <option value="">All Modes</option>
+                {failureCategories.map((cat) => (
+                  <option key={cat.key} value={cat.key}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Country */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">COUNTRY</label>
+              <select 
+                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
+                value={country}
+                onChange={(e) => handleFilterChange('country', e.target.value)}
+              >
+                <option value="">All Countries</option>
+                <option value="USA">USA</option>
+                <option value="India">India</option>
+                <option value="Europe">Europe</option>
+              </select>
+            </div>
+
+            {/* Sort By (Dual Dropdowns side-by-side matching screenshot) */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">SORT BY</label>
+              <div className="grid grid-cols-2 gap-2">
+                <select 
+                  className="w-full bg-surface-2 border border-border rounded-xl px-2.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
+                  value={sort}
+                  onChange={(e) => handleFilterChange('sort', e.target.value)}
+                >
+                  <option value="name">Name</option>
+                  <option value="funding">Funding</option>
+                  <option value="lifetime">Lifespan</option>
+                  <option value="users">Peak Users</option>
+                </select>
+                <select 
+                  className="w-full bg-surface-2 border border-border rounded-xl px-2 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
+                  value={order}
+                  onChange={(e) => handleFilterChange('order', e.target.value)}
+                >
+                  <option value="asc">Asc</option>
+                  <option value="desc">Desc</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Section */}
+        <div>
+          <div className="mb-6 flex items-center justify-between text-sm text-text-secondary">
+            <div>
+              Showing <span className="font-semibold text-text-primary">{startups.length}</span> of <span className="font-semibold text-text-primary">{total}</span> results
+            </div>
+            {Object.keys(Object.fromEntries(searchParams)).length > 0 && (
+              <button 
+                onClick={clearAllFilters}
+                className="text-accent hover:underline font-medium text-xs"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div key={i} className="pv-card p-6 h-full flex flex-col animate-pulse">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 rounded-lg bg-surface-2 border border-border" />
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="w-6 h-6 rounded-full bg-surface-2" />
+                      <div className="w-16 h-5 rounded-md bg-surface-2" />
+                    </div>
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 flex flex-col">
+                    <div className="w-3/4 h-6 rounded bg-surface-2 mb-2" />
+                    <div className="w-1/3 h-4 rounded bg-surface-2 mb-4" />
+                    <div className="space-y-2 mb-6">
+                      <div className="w-full h-3.5 rounded bg-surface-2" />
+                      <div className="w-full h-3.5 rounded bg-surface-2" />
+                      <div className="w-5/6 h-3.5 rounded bg-surface-2" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : startups.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {startups.map((startup) => (
+                  <StartupCard key={startup.id} {...startup} />
+                ))}
+              </div>
+
+              {/* Infinite scroll sentinel + loading indicator */}
+              {hasMore && <div ref={sentinelRef} className="h-10" aria-hidden="true" />}
+              {loadingMore && (
+                <div className="flex justify-center py-8" role="status" aria-live="polite">
+                  <div className="w-6 h-6 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
+                </div>
+              )}
+              {!hasMore && total > PAGE_SIZE && (
+                <div className="text-center text-xs text-text-muted py-8">
+                  You've reached the end — {total} companies in the archive.
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="pv-card p-12 text-center">
+              {analyzing ? (
+                <div role="status" aria-live="polite" className="flex flex-col items-center">
+                  <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-5" />
+                  <h3 className="text-lg font-semibold text-text-primary mb-2">Analyzing company…</h3>
+                  <p className="text-text-secondary text-sm max-w-md mx-auto">
+                    Importing SEC filings, running AI extraction, and building a full postmortem for
+                    <span className="font-semibold text-text-primary"> “{query}”</span>. This takes about 30–60 seconds.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-text-primary mb-2">No results found</h3>
+                  <p className="text-text-secondary text-sm mb-6 max-w-md mx-auto">
+                    {query
+                      ? "This company isn't in the archive yet — we can import it live from SEC EDGAR and generate a full intelligence report."
+                      : 'No startups match your current filters. Try adjusting your search or clearing filters.'}
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    {query && (
+                      <button
+                        type="button"
+                        onClick={() => analyzeAndImport(query)}
+                        className="pv-btn-primary inline-flex items-center justify-center gap-2"
+                        aria-label={`Analyze and import ${query}`}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Analyze &amp; Import “{query}”
+                      </button>
+                    )}
+                    <button type="button" onClick={clearAllFilters} className="pv-btn-secondary">
+                      Clear all filters
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

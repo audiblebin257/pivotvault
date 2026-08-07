@@ -1,3 +1,94 @@
+import seedData from '../data/seedData.json';
+
+function slugify(str) {
+  return (str || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function parseFundingAmount(fundingStr) {
+  if (!fundingStr) return 50000000;
+  const clean = String(fundingStr).replace(/[^0-9.]/g, '');
+  const num = parseFloat(clean) || 50;
+  if (fundingStr.includes('B')) return num * 1000000000 * 80;
+  if (fundingStr.includes('M')) return num * 1000000 * 80;
+  if (fundingStr.includes('k') || fundingStr.includes('K')) return num * 1000 * 80;
+  return num * 80;
+}
+
+// Map 413 seed.json companies to normalized mock startup objects
+const normalizedSeedStartups = (seedData || []).map((item, idx) => {
+  const name = item.name || `Startup ${idx + 1}`;
+  const slug = slugify(name);
+  const foundingYear = item.yearFounded || 2015;
+  const shutdownYear = item.yearClosed || 2023;
+  const lifetimeMonths = Math.max(12, (shutdownYear - foundingYear) * 12);
+  const failureReasonsList = Array.isArray(item.failureReasons)
+    ? item.failureReasons
+    : [item.failureCategory || 'Strategic Execution'];
+
+  const milestones = Array.isArray(item.milestones)
+    ? item.milestones.map((m, i) => {
+        const parts = String(m).split(':');
+        const year = parseInt(parts[0]) || foundingYear + i;
+        const title = parts.slice(1).join(':').trim() || String(m);
+        return { id: i + 1, title, year };
+      })
+    : [
+        { id: 1, title: `Founded in ${item.city || item.country || 'Silicon Valley'}`, year: foundingYear },
+        { id: 2, title: `Raised ${item.funding || 'Venture Funding'}`, year: foundingYear + 2 },
+        { id: 3, title: `Ceased Operations`, year: shutdownYear }
+      ];
+
+  const failureReasons = failureReasonsList.map((reason, i) => ({
+    id: i + 1,
+    category: item.failureCategory || 'Strategy',
+    description: typeof reason === 'string' ? reason : reason.description || 'Execution breakdown'
+  }));
+
+  const keyMistakes = Array.isArray(item.keyMistakes) ? item.keyMistakes : failureReasonsList;
+
+  return {
+    id: 1000 + idx,
+    slug,
+    name,
+    industry: item.industry || 'Tech',
+    status: 'failed',
+    summary: item.productDescription || item.businessModel || `${name} was a ${item.industry || 'technology'} startup that ceased operations in ${shutdownYear}.`,
+    foundingYear,
+    shutdownYear,
+    lifetimeMonths,
+    fundingInr: parseFundingAmount(item.funding),
+    peakUsers: item.employees ? parseInt(item.employees) * 1000 : 50000,
+    topFailureReason: (item.failureCategory || 'unit_economics').toLowerCase().replace(/[^a-z0-9]/g, '_'),
+    domain: `${slug}.com`,
+    tags: [item.industry, item.failureCategory, item.country].filter(Boolean),
+    timelineEvents: milestones,
+    failureReasons: failureReasons,
+    caseStudy: {
+      originStory: `${name} was founded in ${foundingYear} in ${item.city || item.country || 'USA'}${Array.isArray(item.founders) && item.founders.length ? ` by ${item.founders.join(', ')}` : typeof item.founders === 'string' ? ` by ${item.founders}` : ''}. The company set out to build ${item.productDescription || 'an innovative product in ' + (item.industry || 'tech')}.`,
+      marketProblem: `The company targeted ${item.targetCustomers || 'enterprise and consumer markets'} with a business model based on ${item.businessModel || 'recurring software and services'}.`,
+      businessModel: item.businessModel || `Subscription & Direct-to-Consumer services in ${item.industry || 'Technology'}.`,
+      earlyGrowth: `During initial scaling, ${name} raised ${item.funding || 'significant funding'} from investors including ${Array.isArray(item.investors) ? item.investors.join(', ') : typeof item.investors === 'string' ? item.investors : 'Venture Capital Funds'}.`,
+      fundingHistory: `Total funding raised: ${item.funding || 'Undisclosed'} across multiple seed and venture rounds.`,
+      scalingPhase: `At peak operations, ${name} employed ${item.employees || 'hundreds of team members'} and expanded aggressively across key regional markets.`,
+      warningSigns: `Key friction emerged around ${item.failureCategory || 'business model execution'}.`,
+      strategicMistakes: keyMistakes.map((m, i) => `${i + 1}. **${typeof m === 'string' ? m : m.description || JSON.stringify(m)}**`).join('\n'),
+      criticalDecisions: `The most critical breakdown occurred in scaling before product-market fit was fully secured.`,
+      collapseSequence: `In ${shutdownYear}, after exploring strategic alternatives, ${name} officially ceased operations. ${item.timeline || ''}`,
+      whyFailed: `Primary failure root causes: ${failureReasonsList.join('. ')}.`,
+      founderLessons: `Key takeaway for founders: Validate unit economics and market demand before scaling overhead.`,
+      keyTakeaways: keyMistakes.length > 0 ? keyMistakes : [
+        'Validate product-market fit before expanding operations.',
+        'Keep tight control over capital burn rate.',
+        'Maintain direct customer feedback loops.'
+      ]
+    }
+  };
+});
+
 // Mock external sources generator
 const generateMockExternalSources = (startupName) => {
   const mockPublishers = [
@@ -111,7 +202,7 @@ const generateWebIntelligenceReport = (slug, name) => {
 };
 
 // Mock API data for hackathon demo mode — with FULL Harvard Business Review style case studies!
-export const mockStartups = [
+const initialMockStartups = [
   {
     id: 1,
     slug: 'juicero',
@@ -452,7 +543,15 @@ Total raised: ~$650M (almost all lost).`,
     }
   }
 ];
-mockStartups.push(...additionalStartups);
+
+const combinedStartupMap = new Map();
+// 1. Add all 413 normalized companies from seed.json
+normalizedSeedStartups.forEach(st => combinedStartupMap.set(st.slug, st));
+// 2. Add detailed initial and additional mock startups (overwriting with rich detailed case studies if matched)
+initialMockStartups.forEach(st => combinedStartupMap.set(st.slug, st));
+additionalStartups.forEach(st => combinedStartupMap.set(st.slug, st));
+
+export const mockStartups = Array.from(combinedStartupMap.values());
 
 // Export function to get startup by slug with fallback
 export const getStartupBySlug = (slug) => {
