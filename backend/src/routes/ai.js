@@ -204,6 +204,8 @@ async function callAI(prompt, type = 'risk', userInput = '', extra = {}) {
       return await generateSmartAutopsyFallback(userInput, extra);
     case 'compare':
       return await generateSmartCompareFallback(userInput, extra);
+    case 'report':
+      return await generateSmartIntelligenceReportFallback(userInput, extra);
     default:
       return await generateSmartResearchFallback(userInput, extra);
   }
@@ -1221,4 +1223,10 @@ ${CONSULTANT_BRIEF_INSTRUCTION}`;
   }
 });
 
+// The intelligence-report router (routes/intelligenceReport.js) reuses these
+// shared helpers so the unified report stays consistent with the legacy tools.
 module.exports = router;
+module.exports.callAI = callAI;
+module.exports.callGeminiText = callGeminiText;
+module.exports.getSimilarStartupsFromDB = getSimilarStartupsFromDB;
+module.exports.buildFallbackBrief = buildFallbackBrief;

@@ -8,7 +8,7 @@ export default defineConfig(({ command }) => ({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://pivotvault-production.up.railway.app',
+        target: 'https://pivotvault-10le.onrender.com',
         changeOrigin: true
       }
     }

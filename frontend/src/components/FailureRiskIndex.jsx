@@ -14,9 +14,9 @@ const getScoreConfig = (score) => {
     };
   } else if (score <= 55) {
     return {
-      color: 'text-emerald-400',
-      bgColor: 'bg-emerald-400',
-      barColor: 'bg-emerald-400',
+      color: 'text-success',
+      bgColor: 'bg-success',
+      barColor: 'bg-success',
       label: 'MODERATE RISK'
     };
   } else if (score <= 75) {

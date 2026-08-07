@@ -1,15 +1,13 @@
 import axios from 'axios';
 import {
   mockStartups,
-  mockRiskScan,
   mockAiResponse,
-  mockPlaybook,
-  mockPitchDeckAutopsy,
   getStartupBySlug,
-  generateMockExternalSources
+  generateMockExternalSources,
+  mockIntelligenceReport,
+  mockEventChatReply
 } from './mockApi';
 import { getMockSecDashboard, mockSecLookup } from './secDashboardMock';
-import { getRandomQuestions } from './quizData';
 
 export const API_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -64,19 +62,6 @@ const mockApiHandler = async (config) => {
     };
   }
 
-  // Mock /quiz endpoint
-  if (url.includes('/quiz')) {
-    // Parse query parameters
-    const urlObj = new URL(url, 'http://localhost');
-    const count = parseInt(urlObj.searchParams.get('count')) || 5;
-    const difficulty = urlObj.searchParams.get('difficulty') || 'mixed';
-    return {
-      data: {
-        questions: getRandomQuestions(count, difficulty)
-      }
-    };
-  }
-
   // Mock /startups endpoint
   if (url.includes('/startups')) {
     // Check for external-research endpoint
@@ -109,24 +94,19 @@ const mockApiHandler = async (config) => {
     };
   }
   
-  // Mock /ai/risk-scan endpoint
-  if (url.includes('/ai/risk-scan')) {
-    return { data: mockRiskScan };
-  }
-  
   // Mock /ai/research endpoint
   if (url.includes('/ai/research')) {
     return { data: mockAiResponse };
   }
-  
-  // Mock /ai/playbook endpoint
-  if (url.includes('/ai/playbook')) {
-    return { data: mockPlaybook };
+
+  // Mock /ai/intelligence-report endpoint (unified Founder Intelligence Report)
+  if (url.includes('/ai/intelligence-report')) {
+    return { data: mockIntelligenceReport(data || {}) };
   }
-  
-  // Mock /ai/autopsy endpoint
-  if (url.includes('/ai/autopsy')) {
-    return { data: mockPitchDeckAutopsy };
+
+  // Mock /ai/event-chat endpoint (timeline event-scoped AI chat)
+  if (url.includes('/ai/event-chat')) {
+    return { data: mockEventChatReply };
   }
   
   // Mock /insights endpoint

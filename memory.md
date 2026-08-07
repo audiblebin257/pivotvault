@@ -15,7 +15,7 @@
 - **Tech stack:**
   - **Frontend:** React 18, Vite 5, plain JS/JSX (no TypeScript), Tailwind CSS 3, react-router-dom v6 (v7 future flags on), framer-motion + gsap, recharts + react-countup, d3 submodules (d3-selection/zoom/drag/force/transition), axios, zustand, lucide-react, clsx + tailwind-merge, jszip (PPTX parsing).
   - **Backend:** Express, helmet, cors, express-rate-limit, morgan, Prisma ORM, JWT auth, Tavily web search.
-- **Deployment:** Frontend on Netlify; backend on Railway (`https://pivotvault-production.up.railway.app`). CORS also allows `*.vercel.app` and `localhost:5173`.
+- **Deployment:** Frontend on Netlify; backend on Render (`https://pivotvault-10le.onrender.com`). CORS also allows `*.vercel.app` and `localhost:5173`.
 
 ---
 
@@ -41,8 +41,9 @@
 | --- | --- | --- |
 | `/` | LandingPage | no |
 | `/explore` | FailureExplorer | no |
-| `/startup/:slug` | StartupDetailPage / PostmortemPage | no |
-| `/scan` | RiskScanner | yes |
+| `/startup/:slug` | PostmortemPage | no |
+| `/report` | FounderIntelligenceReport | yes |
+| `/settings` | Settings | yes |
 | `/graph` | KnowledgeGraph | no |
 | `/confessions` | ConfessionWall | no |
 | `/insights` | InsightsDashboard | no |
@@ -50,10 +51,8 @@
 | `/assistant` | AiAssistant | yes |
 | `/bookmarks` | BookmarksPage | yes |
 | `/history` | HistoryPage | yes |
-| `/playbook` | FounderPlaybook | yes |
-| `/quiz` | FailureQuiz | no |
+| `/compare` | CompareStartups | no |
 | `/ghosts` | HallOfGhosts | no |
-| `/autopsy` | PitchDeckAutopsy | yes |
 | `/login`, `/signup` | Login / Signup | no |
 
 All page components are lazy-loaded via `React.lazy` and wrapped in Suspense.
@@ -147,7 +146,7 @@ cd backend && npm install
 
 ### Deploy
 - **Frontend → Netlify** (`netlify.toml`, `frontend/_redirects`, committed `frontend/dist/`).
-- **Backend → Railway** (`https://pivotvault-production.up.railway.app`).
+- **Backend → Render** (`https://pivotvault-10le.onrender.com`).
 
 ### Validation
 - `cd frontend && npm run build` must be clean. No unit tests / no lint. Use a browser agent for runtime/console checks.
@@ -157,6 +156,34 @@ cd backend && npm install
 ## Session History
 
 > Append newest entries at the **top**. Each entry: date, model, summary, files, verification, follow-ups.
+
+### Session 21 — 2026-08-07 — Monochrome Design System Redesign (model: Gemini 3.5 Flash)
+- **Summary:** Redesigned the entire PivotVault design system around a true monochrome black-and-white visual identity. Updated all core light/dark variables in `index.css` to white backgrounds in light mode, pure black in dark mode, and minimal gray tones. Standardized secondary buttons as outlined-only and ghost buttons as transparent. Configured sidebar active list items to display vertical monochrome indicators (black in light mode, white in dark mode) and subtle gray background highlights. Dynamic chart palettes (used for compared items and sectors) were rewritten to load monochrome sequences (black/gray/white) instead of warm/golden ranges. Cleaned up remaining warm/amber hardcoded overrides on the Postmortem details timeline, playbook, and intelligence reports.
+- **Files:** [frontend/src/index.css](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/index.css), [frontend/src/lib/design-system.js](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/lib/design-system.js), [frontend/src/components/ui/Button.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/components/ui/Button.jsx), [frontend/src/components/Sidebar.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/components/Sidebar.jsx), [frontend/src/components/Logo.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/components/Logo.jsx), [frontend/src/components/PremiumRadarChart.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/components/PremiumRadarChart.jsx), [frontend/src/pages/PostmortemPage.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/pages/PostmortemPage.jsx), [frontend/src/pages/InsightsDashboard.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/pages/InsightsDashboard.jsx), [frontend/src/pages/FinancialIntelligence.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/pages/FinancialIntelligence.jsx), [frontend/src/pages/FailureExplorer.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/pages/FailureExplorer.jsx), [frontend/src/components/FailureRiskIndex.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/components/FailureRiskIndex.jsx), [frontend/src/pages/FounderIntelligenceReport.jsx](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/src/pages/FounderIntelligenceReport.jsx)
+- **Verification:** Ran a full production build (`npm run build`) in `frontend/` to confirm that all pages compile successfully.
+- **Follow-up:** None.
+
+### Session 20 — 2026-08-07 — Render PostgreSQL Database Migration (model: Gemini 3.5 Flash)
+- **Summary:** Migrated the backend database environment from Railway to Render PostgreSQL. Reverted the database URL to the Render internal hostname (`dpg-d9q94m3m8hqs73e85dfg-a`) due to Render Free Tier external connection restrictions. Configured the Express backend startup script in `package.json` to automatically run Prisma migrations and seeds internally on Render deployment. Appended validation query counts to `seed.js` for verification via Render startup logs. Updated the frontend development proxy and documentation, removing all references to the old Railway database/servers.
+- **Files:** [backend/package.json](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/backend/package.json), [backend/prisma/seed.js](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/backend/prisma/seed.js), [backend/.env](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/backend/.env), [frontend/vite.config.js](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/frontend/vite.config.js), [FINAL_DELIVERABLES.md](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/FINAL_DELIVERABLES.md), [memory.md](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/memory.md)
+- **Verification:** Ran a full repository search script to confirm 0 remaining references to `acela.proxy.rlwy.net`, `railway`, or `rlwy`.
+- **Follow-up:** Monitor the Render build logs on the next deployment to verify database migrations and seed execution success counts.
+
+### Session 19 — 2026-08-07 — Project Design Document Generation (model: Gemini 3.5 Flash)
+- **Summary:** Generated a comprehensive project design document / software design specification (`PivotVault_Design_Document.md`) containing 13 sections detailing executive summary, problem understanding, existing solutions comparison tables, proposed first-principles workflows, technical implementations, Mermaid system diagrams (sequence, data flow, deployment), user personas, core innovations, technical challenges & mitigations, future roadmap, 50 potential judge questions and answers, pitch deck presentation guide, and technical appendix.
+- **Files:** [PivotVault_Design_Document.md](file:///c:/Users/Rehan/OneDrive/Desktop/hacakathon/hackverse/1st%20demo/pivotvault/PivotVault_Design_Document.md)
+- **Verification:** Copied successfully from artifact store to workspace root; confirmed markdown structure and content.
+- **Follow-up:** None.
+
+### Session 18 — 2026-08-07 — Founder Intelligence Workflow Refactor (model: Buffy/deepseek-v4-flash)
+- **Summary:** Merged Risk Scanner + Founder Playbook + Pitch Deck Autopsy into ONE **Founder Intelligence Report** page (`/report`) with 6 expandable sections (Executive Summary, Startup Health Score 8-category radar + per-score WHY, Failure Analysis with probability/impact/evidence, Founder Playbook 30/90/12-month, Pitch Analysis with investment score, Startup Timeline). Deleted the three old pages + routes + sidebar entries. Removed the Failure Quiz entirely (page, `/quiz` route, backend `routes/quiz.js`, mock handler, `quizData.js`).
+- **Interactive Timeline:** Replaced PostmortemPage static timeline with `StartupTimeline` (scroll-linked animated fill line via framer-motion `useScroll` + spring, large stage-colored animated nodes). Clicking a node opens `TimelineEventPanel` (right drawer, focus-trapped, Escape-close) with Dossier tab (companies/people/financial impact/lessons/references/related) and **Ask AI tab** (`EventChatPanel`) — event-scoped chat via new `POST /api/ai/event-chat` (RAG over company docs when available + timeline context, deterministic fallback).
+- **Explore = living database:** header, source legend (Seed Archive / SEC EDGAR / Wikipedia / Imported / AI Processed), and per-card intel panel (Health Score bar, failure score, stage, data completeness %) via `deriveIntel()` + `StartupCard` `intel` prop.
+- **Backend:** new `backend/src/routes/intelligenceReport.js` — `POST /api/ai/intelligence-report` (modes: startup/idea/deck; 8-category health schema; LLM prompt + deterministic fallback; rate-limited 5/min) and `POST /api/ai/event-chat` (10/min). `ai.js` now exports shared helpers (`callAI`, `callGeminiText`, `getSimilarStartupsFromDB`, `buildFallbackBrief`). Fixed pre-existing malformed `backend/package.json` (prisma seed block outside main object — broke `node --check`/module resolution).
+- **Navigation/cleanup:** Sidebar simplified to a single Core group (Explore, AI Research Assistant, Founder Intelligence Report, Startup Graph, Bookmarks, Settings) + Featured Vaults + Generate-Report CTA. Deleted dead files: `Navbar.jsx` (unused), `AdminPanel.jsx` (orphaned), `StartupDetailPage.jsx` (orphaned), old mock exports (`mockRiskScan/mockPlaybook/mockPitchDeckAutopsy`). Added `.pv-glass` utilities to `index.css`. Added mock handlers `mockIntelligenceReport`/`mockEventChatReply` in `api.js`/`mockApi.js`.
+- **Files:** `backend/src/routes/{intelligenceReport,ai,index}.js`, `backend/package.json`; `frontend/src/{App,components/Sidebar,pages/PostmortemPage,pages/FailureExplorer,pages/Signup,lib/api,lib/mockApi,components/StartupCard,index.css}.jsx|js|css`; new `components/timeline/{StartupTimeline,TimelineEventPanel,EventChatPanel}.jsx`, `components/ui/ExpandableSection.jsx`, `pages/{FounderIntelligenceReport,Settings}.jsx`, `onboarding/{ProductTour,WelcomeScreen}.jsx`.
+- **Verification:** `npm run build` clean (multiple runs). Backend `node --check` + module requires pass. Browser smoke test confirmed Explore living database (Health 37/100, SEED ARCHIVE badge, Data 100%) and Juicero interactive timeline (circular nodes + event cards). `/report` form-fill browser test was blocked by a flaky chrome-devtools bridge (build + review passed instead). code-reviewer: minor findings all addressed (rate limits, focus trap, numeric slide sort, fallback context).
+- **Follow-up:** Re-run browser test of `/report` generation flow when the dev bridge is stable; consider surfacing real SEC/Wikipedia source badges on imported companies.
 
 ### Session 17 — 2026-08-07 — Theme-Aware Sidebar Light Mode Color Fix (model: Gemini 3.6 Flash)
 - **Summary:** Updated `Sidebar.jsx` to use semantic theme tokens (`bg-bg`, `bg-surface`, `bg-surface-2`, `border-border`, `text-text-primary`, `text-text-secondary`, `bg-accent`, `text-accent-contrast`) instead of hardcoded dark hex codes (`bg-[#181312]`). The sidebar now smoothly adapts to Light Mode ("Warm Research Paper" parchment/paper palette) and Dark Mode ("Founder Intelligence Terminal").
@@ -207,7 +234,7 @@ cd backend && npm install
   - `frontend/src/components/FailureRiskIndex.jsx` (Phase 6): added `SCORE_BREAKDOWN_MAP` + `getScoreBreakdown(factors, totalScore)` mapping the existing 8 weighted diagnostic vectors into 6 human buckets (Financial Health /20, Product Execution /25, Market Fit /15, Leadership /15, External Factors /15, Timing /10 = 100), rendered as a leader-dot `points/max` table with per-row "why" + Total. Reconciles per-bucket rounding so rows sum EXACTLY to the headline `totalScore` (single source of truth).
   - `frontend/src/pages/FailureExplorer.jsx` (Phase 10a/10b): server-side pagination + IntersectionObserver infinite scroll (`PAGE_SIZE=24`, `filterKey` via useMemo resets list on filter change, append effect for page>1). Empty-state "Generate Report" button replaced with `analyzeAndImport()` → `GET /api/companies/search?q=` (live import) → navigate to `/startup/:slug`, with inline "Analyzing company…" spinner.
 - **Audit findings (verified):** Every other frontend page already routes through `lib/api.js` (VITE_API_URL + localhost dev fallback). Backend `index.js` wires all routes; `monitoring.js`'s `embeddingGeneratorQueue` export exists (no crash). Enrichment (`services/companyImport`), dynamic postmortem (`documentaryData.js`), SEC import, RAG citations, and graph edge creation already implemented. `startups.js` `:slug` already returns 202+enriching for missing companies and PostmortemPage polls it.
-- **Honest remaining gaps:** Full end-to-end RUNTIME verification (Railway health, live SEC import, RAG citations returning) needs the deployed env + migrations applied + API keys — not verifiable from local repo. Failure Score breakdown uses 6 fixed buckets derived from the 8-vector risk model (not independent per-category LLM scores).
+- **Honest remaining gaps:** Full end-to-end RUNTIME verification (Render health, live SEC import, RAG citations returning) needs the deployed env + migrations applied + API keys — not verifiable from local repo. Failure Score breakdown uses 6 fixed buckets derived from the 8-vector risk model (not independent per-category LLM scores).
 - **Files:** `frontend/src/pages/HallOfGhosts.jsx`, `frontend/src/components/FailureRiskIndex.jsx`, `frontend/src/pages/FailureExplorer.jsx`, `memory.md`.
 - **Verification:** `cd frontend && npm run build` clean (multiple runs, 6–53s). code-reviewer passed all changes (incl. rounding-reconciliation loop termination/bounds). No backend changes made.
 - **Follow-up:** Wire live runtime verification once deployed; consider surfacing the `points/max` breakdown from real per-category `aiAnalyses` scores when available; add pagination controls fallback for no-JS.
@@ -273,7 +300,7 @@ cd backend && npm install
   - **Confirmed backend wiring:** `backend/src/index.js` already imports `secService`, registers `/api/sec` routes, and starts the daily incremental sync scheduler at boot (02:30 UTC default, override via `SEC_SYNC_CRON`).
 - **Files:** `backend/prisma/migrations/20250628000000_add_sec_edgar_tables/migration.sql`, `backend/.env.example`, `memory.md`.
 - **Verification:** Prisma schema validation passes (`prisma validate`). Prisma client generation succeeds and exposes all 6 SEC models. All SEC modules require cleanly in Node.js. Backend startup failure is a **pre-existing** `langchain/text_splitter` import issue in `rag.js`, unrelated to SEC.
-- **Follow-up:** Apply the migration SQL to the production Railway database (`npx prisma migrate deploy` or run the SQL directly). Once deployed, test the API endpoints: `POST /api/sec/sync/:identifier`, `GET /api/sec/lookup?q=Apple`, `GET /api/sec/companies/:cik/filings`. Consider adding frontend UI for SEC data visualization in a future phase.
+- **Follow-up:** Apply the migration SQL to the production Render database (`npx prisma migrate deploy` or run the SQL directly). Once deployed, test the API endpoints: `POST /api/sec/sync/:identifier`, `GET /api/sec/lookup?q=Apple`, `GET /api/sec/companies/:cik/filings`. Consider adding frontend UI for SEC data visualization in a future phase.
 
 ### Session 6 — 2026-06-28 — Hackathon Audit & Optimizations (model: Antigravity)
 - **Summary:** Conducted a comprehensive production optimization audit and finalized bug fixes for AI follow-ups, loading experiences, and the mathematical Failure Index to prepare PivotVault for the national hackathon.

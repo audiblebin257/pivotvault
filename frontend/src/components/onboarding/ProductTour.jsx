@@ -2,8 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, Sparkles, Zap, ClipboardCheck, FileText, BarChart2,
-  ArrowLeft, ArrowRight, X, Check,
+  Search, Sparkles, FileText, Share2, ArrowLeft, ArrowRight, X, Check,
 } from 'lucide-react';
 
 /**
@@ -20,12 +19,10 @@ import {
  */
 
 export const TOUR_STEPS = [
-  { id: 'explore', icon: Search, title: 'Failure Explorer', body: 'Discover why real startups failed — browse documented postmortems across every industry.' },
+  { id: 'explore', icon: Search, title: 'Explore', body: 'A living startup intelligence database — browse companies, health scores and documented postmortems.' },
   { id: 'assistant', icon: Sparkles, title: 'AI Research Assistant', body: 'Ask questions about startup failures and get answers grounded in real cases.' },
-  { id: 'scan', icon: Zap, title: 'Risk Scanner', body: 'Analyze your startup idea before building — stress-test it against historical failures.' },
-  { id: 'playbook', icon: ClipboardCheck, title: 'Founder Playbook', body: 'Generate a roadmap tailored to your idea, based on what killed similar startups.' },
-  { id: 'autopsy', icon: FileText, title: 'Pitch Deck Autopsy', body: 'Improve your investor pitch by exposing the weaknesses that sank others.' },
-  { id: 'insights', icon: BarChart2, title: 'Insights Dashboard', body: 'Discover industry-wide failure patterns and where the danger zones are.' },
+  { id: 'report', icon: FileText, title: 'Founder Intelligence Report', body: 'One comprehensive AI report for a startup, an idea, or a pitch deck — risk analysis, playbook and investor review in a single workflow.' },
+  { id: 'graph', icon: Share2, title: 'Startup Graph', body: 'Visualize how companies, industries and failure patterns connect across the archive.' },
 ];
 
 const SPOTLIGHT_PAD = 8;

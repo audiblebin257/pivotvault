@@ -13,22 +13,15 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-// Chart color palette
-const chartColors = [
-  '#F59E0B',
-  '#8B5CF6',
-  '#10B981',
-  '#3B82F6',
-  '#EC4899',
-  '#F97316',
-  '#06B6D4',
-  '#84CC16'
-];
-
 const InsightsDashboard = () => {
   const [data, setData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const { theme } = useTheme();
+
+  const isDark = theme === 'blue';
+  const chartColors = isDark 
+    ? ['#FFFFFF', '#E0E0E0', '#C0C0C0', '#A0A0A0', '#808080', '#606060', '#404040', '#202020']
+    : ['#111111', '#333333', '#555555', '#777777', '#999999', '#BBBBBB', '#DDDDDD', '#EEEEEE'];
 
   React.useEffect(() => {
     const fetchData = async () => {

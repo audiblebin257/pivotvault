@@ -77,15 +77,15 @@ const Logo = ({
   };
 
   const getGradient = (str) => {
-    if (!str) return 'from-purple-600 to-indigo-600';
+    if (!str) return 'from-neutral-700 to-neutral-900';
     const hash = str.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const gradients = [
-      'from-pink-500 to-rose-500',
-      'from-purple-600 to-indigo-600',
-      'from-blue-500 to-cyan-500',
-      'from-emerald-500 to-teal-500',
-      'from-amber-500 to-orange-500',
-      'from-violet-500 to-fuchsia-500',
+      'from-neutral-800 to-neutral-950',
+      'from-neutral-700 to-neutral-900',
+      'from-neutral-600 to-neutral-800',
+      'from-neutral-500 to-neutral-700',
+      'from-neutral-400 to-neutral-600',
+      'from-neutral-300 to-neutral-500',
     ];
     return gradients[hash % gradients.length];
   };
