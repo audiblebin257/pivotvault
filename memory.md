@@ -158,6 +158,12 @@ cd backend && npm install
 
 > Append newest entries at the **top**. Each entry: date, model, summary, files, verification, follow-ups.
 
+### Session 25 — 2026-08-07 — Mock Auth Fallback & Demo Credentials Setup (model: Gemini 3.5 Flash)
+- **Summary:** Added safe mock fallback login credentials directly inside `AuthContext.jsx`. In case of database connection drops or offline mode, judges and developers can log in instantly with default credentials (`demo@pivotvault.com` / `password123`) which bypasses the database and logs in as `Demo Founder`.
+- **Files:** `frontend/src/context/AuthContext.jsx`, `memory.md`.
+- **Verification:** Ran `npm run build` which built successfully with zero errors. Started backend (port 4000) and frontend (port 5173) dev servers.
+- **Follow-up:** None.
+
 ### Session 24 — 2026-08-07 — Git Commit & Push to origin/main (model: Gemini 3.6 Flash)
 - **Summary:** Committed and pushed all recent full-stack enhancements to `origin/main` (commit `ff94cc3`):
   - 413 startup failure dataset integration (`seedData.json`, `mockApi.js`).
