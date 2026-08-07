@@ -158,6 +158,28 @@ cd backend && npm install
 
 > Append newest entries at the **top**. Each entry: date, model, summary, files, verification, follow-ups.
 
+### Session 17 — 2026-08-07 — Theme-Aware Sidebar Light Mode Color Fix (model: Gemini 3.6 Flash)
+- **Summary:** Updated `Sidebar.jsx` to use semantic theme tokens (`bg-bg`, `bg-surface`, `bg-surface-2`, `border-border`, `text-text-primary`, `text-text-secondary`, `bg-accent`, `text-accent-contrast`) instead of hardcoded dark hex codes (`bg-[#181312]`). The sidebar now smoothly adapts to Light Mode ("Warm Research Paper" parchment/paper palette) and Dark Mode ("Founder Intelligence Terminal").
+- **Files:** `frontend/src/components/Sidebar.jsx`, `memory.md`.
+- **Verification:** Ran `npm run build` inside `frontend/` which completed in 9.12s with zero compilation errors.
+- **Follow-up:** None.
+
+### Session 16 — 2026-08-06 — Sleek Sub-Tree Sidebar Redesign matching UI Mockup (model: Gemini 3.6 Flash)
+- **Summary:** Redesigned `Sidebar.jsx` to faithfully replicate the user's uploaded dashboard mockup: top user profile card, floating edge collapse toggle button (`<` / `>`), tree branch connectors (`TreeSubItem`), collapsed right-floating popover menus (`AnimatePresence`), and bottom gradient CTA card.
+- **Key Changes:**
+  - `frontend/src/components/Sidebar.jsx`: Integrated `ExpandableNavGroup` with curved tree-branch connector lines (`border-l-2 border-b-2 rounded-bl-lg`), top user profile header (`FOUNDER / OPERATOR`), border-floating circular toggle button, featured case studies list, and bottom amber gradient CTA button (`+ Risk-Scan Idea`). Excluded Mac window controls as instructed.
+- **Files:** `frontend/src/components/Sidebar.jsx`, `memory.md`.
+- **Verification:** Ran `npm run build` inside `frontend/` which completed in 8.88s with zero errors.
+- **Follow-up:** None.
+
+### Session 15 — 2026-08-06 — Figma Dashboard Animated Sidebar Navigation Menu (model: Gemini 3.6 Flash)
+- **Summary:** Upgraded the application sidebar to a Figma-inspired animated Dashboard Navigation Menu with seamless Dark & Light theme switcher support, status badges, active indicator spring animation, collapsed tooltips, and bottom user profile card.
+- **Key Changes:**
+  - `frontend/src/components/Sidebar.jsx`: Integrated segmented theme switcher (Dark/Light switch with sliding `motion.div`), animated brand header with collapse toggle chevron (`ChevronLeft`/`ChevronRight`), notification badges (`413+`, `AI`, `LIVE`, `NEW`, `SEC`, `HOT`), active indicator spring indicator (`layoutId="figma-sidebar-active-indicator"`), and bottom user profile footer with online status indicator.
+- **Files:** `frontend/src/components/Sidebar.jsx`, `memory.md`.
+- **Verification:** Ran `npm run build` inside `frontend/` which completed successfully with zero compilation errors.
+- **Follow-up:** None.
+
 ### Session 14 — 2026-07-04 — Final Production Readiness Audit & Graph Fix (model: Gemini 3.5 Flash)
 - **Summary:** Conducted a comprehensive production readiness audit (Phases 1-12) evaluating technical quality, backend, frontend, security, and performance. Discovered and fixed a critical endpoint mismatch in the mock API for the Knowledge Graph page.
 - **Key Changes:**
