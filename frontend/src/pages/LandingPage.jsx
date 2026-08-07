@@ -230,6 +230,133 @@ const StartupNetworkGraph = () => {
 };
 
 /* ============================================================================
+   3D Glowing Geometric Crystal Component (Matches User Hero Mockup)
+============================================================================= */
+const GlowingGeometricCrystal = () => {
+  const [angle, setAngle] = useState(0);
+
+  useEffect(() => {
+    let animId;
+    const animate = () => {
+      setAngle((prev) => (prev + 0.005) % (Math.PI * 2));
+      animId = requestAnimationFrame(animate);
+    };
+    animId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const rawVertices = [
+    [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+    [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+    [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]
+  ];
+
+  const cosY = Math.cos(angle);
+  const sinY = Math.sin(angle);
+  const cosX = Math.cos(angle * 0.65);
+  const sinX = Math.sin(angle * 0.65);
+
+  const rotatedVertices = rawVertices.map(([x, y, z]) => {
+    let x1 = x * cosY + z * sinY;
+    let z1 = -x * sinY + z * cosY;
+    let y2 = y * cosX - z1 * sinX;
+    let z2 = y * sinX + z1 * cosX;
+    return { x: x1, y: y2, z: z2 };
+  });
+
+  const scale = 95;
+  const projected = rotatedVertices.map((v) => ({
+    x: 200 + v.x * scale,
+    y: 200 + v.y * scale,
+    z: v.z
+  }));
+
+  const edges = [];
+  for (let i = 0; i < rawVertices.length; i++) {
+    for (let j = i + 1; j < rawVertices.length; j++) {
+      const dx = rawVertices[i][0] - rawVertices[j][0];
+      const dy = rawVertices[i][1] - rawVertices[j][1];
+      const dz = rawVertices[i][2] - rawVertices[j][2];
+      const distSq = dx * dx + dy * dy + dz * dz;
+      if (Math.abs(distSq - 4) < 0.25) {
+        edges.push([i, j]);
+      }
+    }
+  }
+
+  return (
+    <div className="relative w-full max-w-[420px] aspect-square mx-auto flex items-center justify-center pointer-events-none select-none">
+      {/* Outer ambient glow */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500/25 via-amber-400/20 to-transparent blur-3xl animate-pulse" />
+      <div className="absolute inset-10 rounded-full bg-amber-500/15 blur-2xl" />
+
+      {/* 3D SVG Crystal */}
+      <svg viewBox="0 0 400 400" className="relative w-full h-full filter drop-shadow-[0_0_35px_rgba(245,158,11,0.6)]">
+        <defs>
+          <linearGradient id="crystalGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="50%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#b45309" />
+          </linearGradient>
+          <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+            <stop offset="35%" stopColor="#fbbf24" stopOpacity="0.8" />
+            <stop offset="70%" stopColor="#f59e0b" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {/* Radiant Inner Core */}
+        <circle cx="200" cy="200" r="75" fill="url(#coreGlow)" />
+        <circle cx="200" cy="200" r="28" fill="#ffffff" className="opacity-95 blur-[2px]" />
+
+        {/* 3D Wireframe Edges */}
+        {edges.map(([p1, p2], idx) => {
+          const v1 = projected[p1];
+          const v2 = projected[p2];
+          const avgZ = (v1.z + v2.z) / 2;
+          const opacity = 0.4 + ((avgZ + 2) / 4) * 0.6;
+          const strokeWidth = 1.5 + ((avgZ + 2) / 4) * 1.8;
+
+          return (
+            <line
+              key={idx}
+              x1={v1.x}
+              y1={v1.y}
+              x2={v2.x}
+              y2={v2.y}
+              stroke="url(#crystalGold)"
+              strokeWidth={strokeWidth}
+              strokeOpacity={opacity}
+              strokeLinecap="round"
+            />
+          );
+        })}
+
+        {/* Vertex Points */}
+        {projected.map((v, idx) => {
+          const opacity = 0.5 + ((v.z + 2) / 4) * 0.5;
+          const r = 3 + ((v.z + 2) / 4) * 2;
+          return (
+            <circle
+              key={idx}
+              cx={v.x}
+              cy={v.y}
+              r={r}
+              fill="#ffffff"
+              stroke="url(#crystalGold)"
+              strokeWidth="1.5"
+              fillOpacity={opacity}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+/* ============================================================================
    Landing Page
 ============================================================================= */
 const LandingPage = () => {
@@ -351,168 +478,213 @@ const LandingPage = () => {
     }
   ];
 
+/* ============================================================================
+   3D Glowing Geometric Crystal Component (Matches User Hero Mockup)
+============================================================================= */
+const GlowingGeometricCrystal = () => {
+  const [angle, setAngle] = useState(0);
+
+  useEffect(() => {
+    let animId;
+    const animate = () => {
+      setAngle((prev) => (prev + 0.005) % (Math.PI * 2));
+      animId = requestAnimationFrame(animate);
+    };
+    animId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const rawVertices = [
+    [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+    [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+    [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]
+  ];
+
+  const cosY = Math.cos(angle);
+  const sinY = Math.sin(angle);
+  const cosX = Math.cos(angle * 0.65);
+  const sinX = Math.sin(angle * 0.65);
+
+  const rotatedVertices = rawVertices.map(([x, y, z]) => {
+    let x1 = x * cosY + z * sinY;
+    let z1 = -x * sinY + z * cosY;
+    let y2 = y * cosX - z1 * sinX;
+    let z2 = y * sinX + z1 * cosX;
+    return { x: x1, y: y2, z: z2 };
+  });
+
+  const scale = 95;
+  const projected = rotatedVertices.map((v) => ({
+    x: 200 + v.x * scale,
+    y: 200 + v.y * scale,
+    z: v.z
+  }));
+
+  const edges = [];
+  for (let i = 0; i < rawVertices.length; i++) {
+    for (let j = i + 1; j < rawVertices.length; j++) {
+      const dx = rawVertices[i][0] - rawVertices[j][0];
+      const dy = rawVertices[i][1] - rawVertices[j][1];
+      const dz = rawVertices[i][2] - rawVertices[j][2];
+      const distSq = dx * dx + dy * dy + dz * dz;
+      if (Math.abs(distSq - 4) < 0.25) {
+        edges.push([i, j]);
+      }
+    }
+  }
+
+  return (
+    <div className="relative w-full max-w-[420px] aspect-square mx-auto flex items-center justify-center pointer-events-none select-none">
+      {/* Outer ambient glow */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500/25 via-amber-400/20 to-transparent blur-3xl animate-pulse" />
+      <div className="absolute inset-10 rounded-full bg-amber-500/15 blur-2xl" />
+
+      {/* 3D SVG Crystal */}
+      <svg viewBox="0 0 400 400" className="relative w-full h-full filter drop-shadow-[0_0_35px_rgba(245,158,11,0.6)]">
+        <defs>
+          <linearGradient id="crystalGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="50%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#b45309" />
+          </linearGradient>
+          <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+            <stop offset="35%" stopColor="#fbbf24" stopOpacity="0.8" />
+            <stop offset="70%" stopColor="#f59e0b" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {/* Radiant Inner Core */}
+        <circle cx="200" cy="200" r="75" fill="url(#coreGlow)" />
+        <circle cx="200" cy="200" r="28" fill="#ffffff" className="opacity-95 blur-[2px]" />
+
+        {/* 3D Wireframe Edges */}
+        {edges.map(([p1, p2], idx) => {
+          const v1 = projected[p1];
+          const v2 = projected[p2];
+          const avgZ = (v1.z + v2.z) / 2;
+          const opacity = 0.4 + ((avgZ + 2) / 4) * 0.6;
+          const strokeWidth = 1.5 + ((avgZ + 2) / 4) * 1.8;
+
+          return (
+            <line
+              key={idx}
+              x1={v1.x}
+              y1={v1.y}
+              x2={v2.x}
+              y2={v2.y}
+              stroke="url(#crystalGold)"
+              strokeWidth={strokeWidth}
+              strokeOpacity={opacity}
+              strokeLinecap="round"
+            />
+          );
+        })}
+
+        {/* Vertex Points */}
+        {projected.map((v, idx) => {
+          const opacity = 0.5 + ((v.z + 2) / 4) * 0.5;
+          const r = 3 + ((v.z + 2) / 4) * 2;
+          return (
+            <circle
+              key={idx}
+              cx={v.x}
+              cy={v.y}
+              r={r}
+              fill="#ffffff"
+              stroke="url(#crystalGold)"
+              strokeWidth="1.5"
+              fillOpacity={opacity}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
   return (
     <div className="min-h-screen bg-bg">
       {/* ================================================================
-         HERO SECTION
+         HERO SECTION (Matches User UI Mockup)
       ================================================================ */}
-      <section className="relative overflow-hidden pt-8 md:pt-14 pb-20 md:pb-28 bg-hero-glow">
-        {/* Decorative background */}
-        <div className="absolute inset-0 bg-theme-grid opacity-40 pointer-events-none" style={{ maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 80%)' }} />
+      <section className="relative overflow-hidden pt-10 md:pt-16 pb-20 md:pb-28 bg-hero-glow">
+        {/* Decorative background grid */}
+        <div className="absolute inset-0 bg-theme-grid opacity-30 pointer-events-none" style={{ maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 80%)' }} />
 
-        <div className="pv-content-container relative">
-          {/* Top eyebrow row */}
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex items-center justify-center mb-10"
-          >
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-border bg-surface/60 backdrop-blur-sm">
-              <span className="relative flex shrink-0 w-2 h-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50" style={{ background: 'rgb(var(--color-accent))' }} />
-                <span className="relative inline-flex rounded-full w-2 h-2" style={{ background: 'rgb(var(--color-accent))' }} />
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary">
-                {startups.length}+ failed startups · postmortems indexed
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Hero grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-            {/* Left: Text + Search */}
+        <div className="pv-content-container relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            
+            {/* Left Column: Headlines, Pill Search & Prompts */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="lg:col-span-7 relative z-10"
+              transition={{ duration: 0.6 }}
+              className="lg:col-span-7"
             >
-              <div className="pv-eyebrow mb-5 text-accent">
-                Founder Intelligence Terminal
-              </div>
-
-              <h1 className="text-[52px] md:text-[68px] lg:text-[76px] font-display font-bold leading-[1.02] tracking-[-0.035em] text-text-primary mb-6">
-                Learn from{' '}
-                <span className="relative inline-block">
-                  <span className="relative z-10">startup failures</span>
-                  <span className="absolute bottom-1 left-0 w-full h-[0.18em] -z-0 rounded-sm" style={{ background: 'rgb(var(--color-accent))', opacity: 0.35 }} />
-                </span>
-                .
+              {/* Bold Split Headline */}
+              <h1 className="text-[52px] sm:text-[68px] lg:text-[76px] font-display font-extrabold leading-[1.03] tracking-tight text-text-primary mb-4">
+                Learn from <br />
+                startup failures.
               </h1>
 
-              <p className="text-lg md:text-xl text-text-secondary leading-relaxed max-w-2xl mb-10 font-light">
-                PivotVault is the intelligence platform where founders, operators, and investors study failures, compare playbooks, and detect risks <span className="text-text-primary font-medium">before they happen.</span>
+              {/* Subheadline */}
+              <p className="text-base sm:text-lg text-text-secondary leading-relaxed max-w-xl mb-8 font-normal">
+                PivotVault: Intelligence platform to study failures, compare playbooks, and detect risks before they happen.
               </p>
 
-              {/* Search Box - Premium */}
-              <form onSubmit={handleSearch} className="mb-5">
-                <div className="group relative">
-                  <div className="absolute inset-0 rounded-2xl transition-all duration-300 group-focus-within:shadow-[0_0_0_4px_rgb(var(--color-accent)/0.12)]" />
-                  <div className="relative flex items-center bg-surface border border-border rounded-2xl p-2 pr-2 shadow-card transition-all duration-200 group-focus-within:border-accent/40 group-hover:border-border-strong">
-                    <div className="flex items-center pl-5 pr-4 text-text-muted">
-                      <Search className="w-5 h-5" strokeWidth={2} />
-                    </div>
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search 413 startup failures, risks, and playbooks..."
-                      className="flex-1 min-w-0 bg-transparent border-0 outline-none py-3 text-base md:text-[15px] placeholder:text-text-muted text-text-primary"
-                      style={{ boxShadow: 'none', padding: '12px 0' }}
-                    />
-                    <div className="hidden md:flex items-center gap-2 mr-3 px-2.5 py-1.5 rounded-lg border border-border bg-surface-2/60">
-                      <kbd className="text-[10px] font-mono font-bold text-text-muted">⌘</kbd>
-                      <kbd className="text-[10px] font-mono font-bold text-text-muted">K</kbd>
-                    </div>
-                    <button
-                      type="submit"
-                      className="pv-btn-primary h-12 px-6 text-base rounded-xl shrink-0"
-                    >
-                      <Search className="w-4 h-4 mr-2" />
-                      Search
-                    </button>
-                  </div>
+              {/* Pill Search Bar (Matching Mockup) */}
+              <form onSubmit={handleSearch} className="mb-6 max-w-2xl">
+                <div className="relative flex items-center bg-surface border border-border/80 rounded-full p-1.5 pl-6 pr-2 shadow-card transition-all duration-200 focus-within:border-accent/60 focus-within:ring-2 focus-within:ring-accent/20">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search 400+ startup failures, risks, and playbooks..."
+                    className="flex-1 min-w-0 bg-transparent border-0 outline-none text-sm md:text-base text-text-primary placeholder:text-text-muted"
+                  />
+                  <button
+                    type="submit"
+                    className="w-10 h-10 rounded-full bg-surface-2 hover:bg-accent text-text-muted hover:text-accent-contrast flex items-center justify-center transition-all duration-200 shrink-0"
+                    aria-label="Search"
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
                 </div>
               </form>
 
-              {/* Secondary action row */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-10">
-                <button
-                  onClick={() => navigate('/ai-assistant')}
-                  className="pv-btn-secondary h-11 px-5 text-[14px] font-semibold"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" style={{ color: 'rgb(var(--color-accent))' }} />
-                  Ask PivotVault AI
-                </button>
-                <div className="flex items-center gap-1.5 text-sm text-text-muted">
-                  <span className="text-text-secondary">or try:</span>
-                </div>
-              </div>
-
-              {/* Suggested Prompts - Editorial Chips */}
-              <div className="flex flex-wrap gap-2.5">
+              {/* Suggested Prompt Chips (Matching Mockup) */}
+              <div className="flex flex-wrap items-center gap-2.5 max-w-3xl">
                 {suggestedPrompts.map((p, i) => (
                   <motion.button
                     key={i}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, delay: 0.25 + i * 0.08 }}
-                    onClick={() => navigate('/ai-assistant')}
-                    className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border bg-surface/70 text-[13px] text-text-secondary font-medium transition-all duration-200 hover:border-accent/40 hover:text-text-primary hover:bg-surface"
+                    transition={{ duration: 0.35, delay: 0.15 + i * 0.06 }}
+                    onClick={() => {
+                      setQuery(p.text);
+                      navigate(`/explore?q=${encodeURIComponent(p.text)}`);
+                    }}
+                    className="px-4 py-2.5 rounded-2xl border border-border bg-surface-2/60 backdrop-blur-sm text-xs font-medium text-text-secondary transition-all duration-200 hover:border-accent/40 hover:text-text-primary hover:bg-surface"
                   >
-                    <span className="text-accent transition-transform group-hover:scale-110">
-                      {p.icon}
-                    </span>
-                    <span>{p.text}</span>
+                    {p.text}
                   </motion.button>
                 ))}
               </div>
             </motion.div>
 
-            {/* Right: Network Graph Visualization */}
+            {/* Right Column: 3D Glowing Geometric Crystal Graphic */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="lg:col-span-5 relative"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="lg:col-span-5 flex justify-center items-center"
             >
-              <div className="relative aspect-[5/4] lg:aspect-[4/4.2] w-full pv-card overflow-hidden p-2">
-                <StartupNetworkGraph />
-              </div>
-
-              {/* Floating stat chips */}
-              <motion.div
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.7, duration: 0.5 }}
-                className="absolute -left-4 top-20 md:top-24 pv-card !rounded-xl !shadow-elevated px-4 py-3 flex items-center gap-3"
-              >
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgb(var(--color-danger))/0.1' }}>
-                  <Flame className="w-4 h-4" style={{ color: 'rgb(var(--color-danger))' }} />
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Avg. Burn</div>
-                  <div className="text-[15px] font-display font-bold leading-none text-text-primary">$5.2M <span className="text-[11px] font-body font-medium text-danger">▲ 18%</span></div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.85, duration: 0.5 }}
-                className="absolute -right-3 bottom-24 md:bottom-28 pv-card !rounded-xl !shadow-elevated px-4 py-3 flex items-center gap-3"
-              >
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgb(var(--color-success))/0.1' }}>
-                  <Award className="w-4 h-4" style={{ color: 'rgb(var(--color-success))' }} />
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Survival Rate</div>
-                  <div className="text-[15px] font-display font-bold leading-none text-text-primary">32% <span className="text-[11px] font-body font-medium text-success">▲ 4.2%</span></div>
-                </div>
-              </motion.div>
+              <GlowingGeometricCrystal />
             </motion.div>
+
           </div>
         </div>
       </section>

@@ -422,6 +422,9 @@ for (const { name, worker } of workers) {
   worker.on('progress', (job, progress) => {
     logger.log(`[${name} Agent] Job ${job.id} progress:`, progress);
   });
+  worker.on('error', () => {
+    // Silent catch when Redis is offline
+  });
 }
 
 module.exports = {

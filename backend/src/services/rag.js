@@ -10,10 +10,15 @@ const prisma = new PrismaClient();
 
 class RAGService {
   constructor() {
-    this.embeddingsModel = new GoogleGenerativeAIEmbeddings({
-      model: 'text-embedding-004',
-      apiKey: process.env.GEMINI_API_KEY
-    });
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || 'placeholder-key';
+    try {
+      this.embeddingsModel = new GoogleGenerativeAIEmbeddings({
+        model: 'text-embedding-004',
+        apiKey: apiKey
+      });
+    } catch {
+      this.embeddingsModel = null;
+    }
 
     this.splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,

@@ -127,7 +127,6 @@ const StartupCard = React.memo(({
               <div>
                 <div className="text-xs uppercase text-text-muted mb-1 font-medium">Capital Raised</div>
                 <div className="flex items-center gap-1 text-sm font-semibold text-text-primary font-data">
-                  <DollarSign className="w-4 h-4 text-accent" />
                   {formatINR(fundingInr)}
                 </div>
               </div>

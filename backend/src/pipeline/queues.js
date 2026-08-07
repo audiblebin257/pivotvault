@@ -5,7 +5,16 @@ const connection = new IORedis({
   host: process.env.REDIS_HOST || 'localhost',
   port: process.env.REDIS_PORT || 6379,
   maxRetriesPerRequest: null,
-  enableReadyCheck: false
+  enableOfflineQueue: false,
+  enableReadyCheck: false,
+  retryStrategy: (times) => {
+    if (times > 3) return null; // stop retrying after 3 attempts
+    return Math.min(times * 100, 2000);
+  }
+});
+
+connection.on('error', () => {
+  // Silent catch when Redis is unavailable locally
 });
 
 // Define all agent queues
