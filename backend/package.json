@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "PivotVault API - Startup Failure Intelligence Platform",
   "main": "src/firebaseFunction.js",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
+    "start": "npx prisma migrate deploy && npx prisma db seed && node src/index.js",
     "firebase:serve": "firebase emulators:start --only functions",
     "pipeline:start": "node src/pipeline/index.js",
     "pipeline:dev": "nodemon src/pipeline/index.js",

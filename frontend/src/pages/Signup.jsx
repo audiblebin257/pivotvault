@@ -44,7 +44,7 @@ const Signup = () => {
         <div className="text-center mb-8">
           <Skull className="w-12 h-12 text-accent mx-auto mb-3" />
           <h1 className="text-3xl font-display font-extrabold text-text-primary">Create your account</h1>
-          <p className="text-text-secondary text-sm mt-2">Unlock the AI Assistant, Risk Scanner, Playbook & bookmarks.</p>
+          <p className="text-text-secondary text-sm mt-2">Unlock the AI Assistant, Founder Intelligence Report & bookmarks.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="glass-card p-8 space-y-5">

@@ -254,6 +254,28 @@ async function main() {
   console.log(`   - Created: ${createdCount}`);
   console.log(`   - Updated: ${updatedCount}`);
   console.log(`   - Failed:  ${failedCount}`);
+
+  // Verification queries for database counts
+  try {
+    const totalCompanies = await prisma.company.count();
+    const totalFounders = await prisma.founder.count();
+    const totalTimelineEvents = await prisma.timelineEvent.count();
+    const totalTags = await prisma.tag.count();
+    const totalArticles = await prisma.article.count();
+    const totalFailureReasons = await prisma.failureReason.count();
+    const totalLessons = await prisma.lesson.count();
+
+    console.log(`\n📊 DATABASE VERIFICATION SUMMARY:`);
+    console.log(`   ✓ Companies:       ${totalCompanies}`);
+    console.log(`   ✓ Founders:        ${totalFounders}`);
+    console.log(`   ✓ Timeline Events: ${totalTimelineEvents}`);
+    console.log(`   ✓ Tags:            ${totalTags}`);
+    console.log(`   ✓ Articles:        ${totalArticles}`);
+    console.log(`   ✓ Failure Reasons: ${totalFailureReasons}`);
+    console.log(`   ✓ Lessons:         ${totalLessons}`);
+  } catch (verifyErr) {
+    console.error(`⚠️ Failed to query verification counts:`, verifyErr.message);
+  }
 }
 
 main()

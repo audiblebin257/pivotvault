@@ -88,8 +88,8 @@ const PremiumRadarChart = ({ data, isSimulated = false }) => {
         {/* Data polygon - animated */}
         <motion.path
           d={polygonPath}
-          fill={isSimulated ? "rgba(52, 199, 123, 0.2)" : "rgba(201, 145, 52, 0.25)"}
-          stroke={isSimulated ? "rgb(52, 199, 123)" : "rgb(201, 145, 52)"}
+          fill={isSimulated ? "rgba(120, 120, 120, 0.15)" : "rgba(var(--color-accent), 0.15)"}
+          stroke={isSimulated ? "rgb(120, 120, 120)" : "rgb(var(--color-accent))"}
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -107,7 +107,7 @@ const PremiumRadarChart = ({ data, isSimulated = false }) => {
               cx={x}
               cy={y}
               r="5"
-              fill={isSimulated ? "rgb(52, 199, 123)" : "rgb(201, 145, 52)"}
+              fill={isSimulated ? "rgb(120, 120, 120)" : "rgb(var(--color-accent))"}
               stroke="rgb(var(--color-surface))"
               strokeWidth="2"
               custom={i}

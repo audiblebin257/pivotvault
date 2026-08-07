@@ -29,7 +29,8 @@ export const useProductTour = () => useContext(ProductTourContext);
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const FailureExplorer = lazy(() => import('./pages/FailureExplorer'));
 const PostmortemPage = lazy(() => import('./pages/PostmortemPage'));
-const RiskScanner = lazy(() => import('./pages/RiskScanner'));
+const FounderIntelligenceReport = lazy(() => import('./pages/FounderIntelligenceReport'));
+const Settings = lazy(() => import('./pages/Settings'));
 const KnowledgeGraph = lazy(() => import('./pages/KnowledgeGraph'));
 const ConfessionWall = lazy(() => import('./pages/ConfessionWall'));
 const InsightsDashboard = lazy(() => import('./pages/InsightsDashboard'));
@@ -38,12 +39,9 @@ const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const BookmarksPage = lazy(() => import('./pages/BookmarksPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
-const FailureQuiz = lazy(() => import('./pages/FailureQuiz'));
-const FounderPlaybook = lazy(() => import('./pages/FounderPlaybook'));
 const CompareStartups = lazy(() => import('./pages/CompareStartups'));
 const FinancialIntelligence = lazy(() => import('./pages/FinancialIntelligence'));
 const HallOfGhosts = lazy(() => import('./pages/HallOfGhosts'));
-const PitchDeckAutopsy = lazy(() => import('./pages/PitchDeckAutopsy.jsx'));
 
 // Frictionless entry experience: shown once per device after the splash, only
 // for un-authenticated, not-yet-onboarded visitors. Rendered inside <Router>
@@ -184,19 +182,17 @@ function AppContent() {
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/explore" element={<FailureExplorer />} />
                     <Route path="/startup/:slug" element={<PostmortemPage />} />
-                    <Route path="/scan" element={<ProtectedRoute><RiskScanner /></ProtectedRoute>} />
+                    <Route path="/report" element={<ProtectedRoute><FounderIntelligenceReport /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                     <Route path="/graph" element={<KnowledgeGraph />} />
                     <Route path="/confessions" element={<ConfessionWall />} />
                     <Route path="/insights" element={<InsightsDashboard />} />
                     <Route path="/assistant" element={<ProtectedRoute><AiAssistant /></ProtectedRoute>} />
                     <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
                     <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-                    <Route path="/playbook" element={<ProtectedRoute><FounderPlaybook /></ProtectedRoute>} />
-                    <Route path="/quiz" element={<FailureQuiz />} />
                     <Route path="/compare" element={<CompareStartups />} />
                     <Route path="/financials" element={<FinancialIntelligence />} />
                     <Route path="/ghosts" element={<HallOfGhosts />} />
-                    <Route path="/autopsy" element={<ProtectedRoute><PitchDeckAutopsy /></ProtectedRoute>} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                   </Routes>

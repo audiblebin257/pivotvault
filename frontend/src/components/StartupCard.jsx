@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { DollarSign, ShieldAlert, ArrowRight, Eye, BookOpen, Calendar } from 'lucide-react';
+import { DollarSign, ShieldAlert, ArrowRight, Eye, BookOpen, Calendar, Database } from 'lucide-react';
 import { clsx } from 'clsx';
 import BookmarkButton from './BookmarkButton';
 import Logo from './Logo';
@@ -9,6 +9,8 @@ const StartupCard = React.memo(({
   startup,
   layout = 'default', // 'default' | 'compact' | 'featured'
   hasBookmark,
+  // Optional living-database intel panel (health score, source, completeness)
+  intel,
   // Individual props for backward compatibility
   name: _name, 
   slug: _slug, 
@@ -138,6 +140,35 @@ const StartupCard = React.memo(({
                 </div>
               </div>
             </div>
+
+            {/* Living-database intel panel (only when provided) */}
+            {intel && (
+              <div className="mb-4 space-y-2.5 rounded-md border border-border/60 bg-surface-2/40 px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Health Score</span>
+                  <span className={`font-data text-xs font-bold ${intel.healthScore >= 70 ? 'text-success' : intel.healthScore >= 50 ? 'text-accent' : 'text-danger'}`}>
+                    {intel.healthScore}/100
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-border/40">
+                  <div
+                    className={`h-full rounded-full transition-all ${intel.healthScore >= 70 ? 'bg-success' : intel.healthScore >= 50 ? 'bg-accent' : 'bg-danger'}`}
+                    style={{ width: `${intel.healthScore}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-0.5">
+                  {intel.dataSource ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/25 bg-accent/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-accent">
+                      <Database className="w-2.5 h-2.5" />
+                      {intel.dataSource}
+                    </span>
+                  ) : <span />}
+                  <span className="text-[10px] font-medium text-text-muted">
+                    {intel.stage && <>{intel.stage} · </>}Data {intel.dataCompleteness}%
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between pt-1">
             <div className="text-sm text-text-muted">

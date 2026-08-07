@@ -1,11 +1,48 @@
 import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Filter, X, SlidersHorizontal, ArrowUpDown, ChevronDown, AlertTriangle, Sparkles } from 'lucide-react';
+import { Filter, X, SlidersHorizontal, AlertTriangle, Sparkles, Database, Globe, FileUp, Cpu, Boxes } from 'lucide-react';
 import StartupCard from '../components/StartupCard';
 import SearchInput from '../components/ui/SearchInput';
 import api from '../lib/api';
 
 const PAGE_SIZE = 24;
+
+// Derive living-database intel (health score, source, completeness) for any
+// company record — seed archive, SEC EDGAR, Wikipedia, imported, or AI-processed.
+const SOURCE_META = {
+  'Seed Archive': { icon: Database, color: 'border-border bg-surface-3 text-text-primary' },
+  'SEC EDGAR': { icon: Globe, color: 'border-border bg-surface-3 text-text-primary' },
+  'Wikipedia': { icon: Cpu, color: 'border-border bg-surface-3 text-text-primary' },
+  'Imported': { icon: FileUp, color: 'border-border bg-surface-3 text-text-primary' },
+  'AI Processed': { icon: Boxes, color: 'border-border bg-surface-3 text-text-primary' },
+};
+
+const deriveIntel = (s = {}) => {
+  const reasons = s.failureReasons || [];
+  const base = s.status === 'failed' ? 28 : s.status === 'acquired' ? 72 : s.status === 'pivoted' ? 62 : s.status === 'zombie' ? 44 : 55;
+  const aiAnalysis = s.aiAnalyses?.[0];
+  const healthScore = Math.max(
+    8,
+    Math.min(
+      96,
+      Math.round(aiAnalysis ? (aiAnalysis.pmfScore * 0.3 + aiAnalysis.retentionScore * 0.25 + aiAnalysis.monetizationScore * 0.25 + (aiAnalysis.marketingScore || 60) * 0.2) : base + reasons.length * 3)
+    )
+  );
+
+  const dataSource = s.dataSource
+    || (s.isAiGenerated ? 'AI Processed' : (s.secCompanyId ? 'SEC EDGAR' : (s.companyImportJobId || s.importedAt ? 'Imported' : 'Seed Archive')));
+
+  const fields = [
+    s.name, s.industry, s.summary, s.fundingInr, s.foundingYear, s.shutdownYear,
+    s.peakUsers, reasons.length, (s.timelineEvents || []).length, s.domain,
+  ];
+  const dataCompleteness = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+
+  const stage = s.stage
+    || (s.fundingInr >= 100000000000 ? 'Series C+' : s.fundingInr >= 10000000000 ? 'Series B' : s.fundingInr >= 1000000000 ? 'Series A' : 'Seed');
+
+  return { healthScore, dataSource, dataCompleteness, stage };
+};
 
 const FailureExplorer = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -265,15 +302,30 @@ const FailureExplorer = () => {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="pv-content-container py-10">
+      <div className="pv-content-container py-12">
         {/* Header */}
         <div className="mb-8">
-          <div className="text-label uppercase text-text-muted mb-1">Explorer</div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-text-primary mb-6">Failure Archive</h1>
+          <div className="text-label uppercase text-text-muted mb-1">Explore</div>
+          <h1 className="text-3xl font-display font-bold text-text-primary mb-2">Startup Intelligence Database</h1>
+          <p className="text-text-secondary text-sm mb-5 max-w-2xl">
+            A living database of seed startups, SEC EDGAR companies, Wikipedia companies, imported companies and
+            AI-processed ventures — each with a health score, failure score, stage, status and data completeness.
+          </p>
+
+          {/* Source legend */}
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted mr-1">Sources:</span>
+            {Object.entries(SOURCE_META).map(([label, meta]) => (
+              <span key={label} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${meta.color}`}>
+                <meta.icon className="h-3 w-3" />
+                {label}
+              </span>
+            ))}
+          </div>
           
           <div className="flex flex-col sm:flex-row gap-4">
             <SearchInput
-              placeholder="Search startup name, industry, or key lessons..."
+              placeholder="Search company name, industry, ticker, or key lessons..."
               className="flex-1"
               value={query}
               onChange={(e) => handleFilterChange('q', e.target.value)}
@@ -289,219 +341,142 @@ const FailureExplorer = () => {
                 }
               }}
             />
+            <button
+              onClick={() => setShowMobileFilters(true)}
+              className="sm:hidden pv-btn-secondary flex items-center justify-center gap-2"
+            >
+              <Filter className="w-5 h-5" />
+              Filters
+            </button>
           </div>
         </div>
 
-        {/* ================================================================
-           TOP FILTERS PANEL (Matching User Mockup)
-        ================================================================ */}
-        <div className="pv-card p-6 mb-8 border border-border bg-surface/95 rounded-2xl shadow-card">
-          <div className="flex items-center justify-between pb-4 mb-5 border-b border-border">
-            <div className="flex items-center gap-2.5">
-              <SlidersHorizontal className="w-4 h-4 text-accent" />
-              <span className="font-bold text-text-primary text-base">Filters</span>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+          {/* Sidebar */}
+          <aside className="hidden lg:block lg:col-span-1">
+            <div className="pv-card p-6 sticky top-24">
+              {sidebarContent}
             </div>
-            {Object.keys(Object.fromEntries(searchParams)).length > 0 && (
-              <button 
-                onClick={clearAllFilters}
-                className="text-xs font-semibold text-accent hover:underline"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
+          </aside>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-            {/* Industry */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">INDUSTRY</label>
-              <select 
-                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
-                value={industry}
-                onChange={(e) => handleFilterChange('industry', e.target.value)}
-              >
-                <option value="">All Industries</option>
-                {industries.map((ind) => (
-                  <option key={ind} value={ind}>{ind}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Status */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">STATUS</label>
-              <select 
-                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
-                value={status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="failed">Failed / Liquidated</option>
-                <option value="acquired">Acquired / Asset Sale</option>
-                <option value="pivoted">Pivoted / Rebranded</option>
-                <option value="zombie">Zombie State</option>
-              </select>
-            </div>
-
-            {/* Failure Mode */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">FAILURE MODE</label>
-              <select 
-                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
-                value={category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-              >
-                <option value="">All Modes</option>
-                {failureCategories.map((cat) => (
-                  <option key={cat.key} value={cat.key}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Country */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">COUNTRY</label>
-              <select 
-                className="w-full bg-surface-2 border border-border rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
-                value={country}
-                onChange={(e) => handleFilterChange('country', e.target.value)}
-              >
-                <option value="">All Countries</option>
-                <option value="USA">USA</option>
-                <option value="India">India</option>
-                <option value="Europe">Europe</option>
-              </select>
-            </div>
-
-            {/* Sort By (Dual Dropdowns side-by-side matching screenshot) */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">SORT BY</label>
-              <div className="grid grid-cols-2 gap-2">
-                <select 
-                  className="w-full bg-surface-2 border border-border rounded-xl px-2.5 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
-                  value={sort}
-                  onChange={(e) => handleFilterChange('sort', e.target.value)}
-                >
-                  <option value="name">Name</option>
-                  <option value="funding">Funding</option>
-                  <option value="lifetime">Lifespan</option>
-                  <option value="users">Peak Users</option>
-                </select>
-                <select 
-                  className="w-full bg-surface-2 border border-border rounded-xl px-2 py-2.5 text-xs md:text-sm text-text-primary outline-none focus:border-accent/60 transition-colors cursor-pointer"
-                  value={order}
-                  onChange={(e) => handleFilterChange('order', e.target.value)}
-                >
-                  <option value="asc">Asc</option>
-                  <option value="desc">Desc</option>
-                </select>
+          {/* Results */}
+          <div className="lg:col-span-3">
+            <div className="mb-6 flex items-center justify-between text-sm text-text-secondary">
+              <div>
+                Showing <span className="font-semibold text-text-primary">{startups.length}</span> of <span className="font-semibold text-text-primary">{total}</span> results
               </div>
+              {Object.keys(Object.fromEntries(searchParams)).length > 0 && (
+                <button 
+                  onClick={clearAllFilters}
+                  className="text-accent hover:underline font-medium"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
-          </div>
-        </div>
 
-        {/* Results Section */}
-        <div>
-          <div className="mb-6 flex items-center justify-between text-sm text-text-secondary">
-            <div>
-              Showing <span className="font-semibold text-text-primary">{startups.length}</span> of <span className="font-semibold text-text-primary">{total}</span> results
-            </div>
-            {Object.keys(Object.fromEntries(searchParams)).length > 0 && (
-              <button 
-                onClick={clearAllFilters}
-                className="text-accent hover:underline font-medium text-xs"
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="pv-card p-6 h-full flex flex-col animate-pulse">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-lg bg-surface-2 border border-border" />
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="w-6 h-6 rounded-full bg-surface-2" />
-                      <div className="w-16 h-5 rounded-md bg-surface-2" />
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="pv-card p-6 h-full flex flex-col animate-pulse">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-lg bg-surface-2 border border-border" />
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="w-6 h-6 rounded-full bg-surface-2" />
+                        <div className="w-16 h-5 rounded-md bg-surface-2" />
+                      </div>
+                    </div>
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col">
+                      <div className="w-3/4 h-6 rounded bg-surface-2 mb-2" />
+                      <div className="w-1/3 h-4 rounded bg-surface-2 mb-4" />
+                      <div className="space-y-2 mb-6">
+                        <div className="w-full h-3.5 rounded bg-surface-2" />
+                        <div className="w-full h-3.5 rounded bg-surface-2" />
+                        <div className="w-5/6 h-3.5 rounded bg-surface-2" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 py-3 border-y border-border/80 bg-surface-2/40 px-3 rounded-md mb-4">
+                        <div>
+                          <div className="w-16 h-3 rounded bg-surface-2 mb-1.5" />
+                          <div className="w-20 h-4 rounded bg-surface-2" />
+                        </div>
+                        <div>
+                          <div className="w-16 h-3 rounded bg-surface-2 mb-1.5" />
+                          <div className="w-12 h-4 rounded bg-surface-2" />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="w-32 h-4 rounded bg-surface-2" />
+                      <div className="w-4 h-4 rounded bg-surface-2" />
                     </div>
                   </div>
-                  {/* Content */}
-                  <div className="flex-1 flex flex-col">
-                    <div className="w-3/4 h-6 rounded bg-surface-2 mb-2" />
-                    <div className="w-1/3 h-4 rounded bg-surface-2 mb-4" />
-                    <div className="space-y-2 mb-6">
-                      <div className="w-full h-3.5 rounded bg-surface-2" />
-                      <div className="w-full h-3.5 rounded bg-surface-2" />
-                      <div className="w-5/6 h-3.5 rounded bg-surface-2" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : startups.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {startups.map((startup) => (
-                  <StartupCard key={startup.id} {...startup} />
                 ))}
               </div>
+            ) : startups.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {startups.map((startup) => (
+                    <StartupCard key={startup.id} {...startup} intel={deriveIntel(startup)} />
+                  ))}
+                </div>
 
-              {/* Infinite scroll sentinel + loading indicator */}
-              {hasMore && <div ref={sentinelRef} className="h-10" aria-hidden="true" />}
-              {loadingMore && (
-                <div className="flex justify-center py-8" role="status" aria-live="polite">
-                  <div className="w-6 h-6 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
-                </div>
-              )}
-              {!hasMore && total > PAGE_SIZE && (
-                <div className="text-center text-xs text-text-muted py-8">
-                  You've reached the end — {total} companies in the archive.
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="pv-card p-12 text-center">
-              {analyzing ? (
-                <div role="status" aria-live="polite" className="flex flex-col items-center">
-                  <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-5" />
-                  <h3 className="text-lg font-semibold text-text-primary mb-2">Analyzing company…</h3>
-                  <p className="text-text-secondary text-sm max-w-md mx-auto">
-                    Importing SEC filings, running AI extraction, and building a full postmortem for
-                    <span className="font-semibold text-text-primary"> “{query}”</span>. This takes about 30–60 seconds.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-text-primary mb-2">No results found</h3>
-                  <p className="text-text-secondary text-sm mb-6 max-w-md mx-auto">
-                    {query
-                      ? "This company isn't in the archive yet — we can import it live from SEC EDGAR and generate a full intelligence report."
-                      : 'No startups match your current filters. Try adjusting your search or clearing filters.'}
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    {query && (
-                      <button
-                        type="button"
-                        onClick={() => analyzeAndImport(query)}
-                        className="pv-btn-primary inline-flex items-center justify-center gap-2"
-                        aria-label={`Analyze and import ${query}`}
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Analyze &amp; Import “{query}”
+                {/* Infinite scroll sentinel + loading indicator */}
+                {hasMore && <div ref={sentinelRef} className="h-10" aria-hidden="true" />}
+                {loadingMore && (
+                  <div className="flex justify-center py-8" role="status" aria-live="polite">
+                    <div className="w-6 h-6 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
+                  </div>
+                )}
+                {!hasMore && total > PAGE_SIZE && (
+                  <div className="text-center text-xs text-text-muted py-8">
+                    You've reached the end — {total} companies in the archive.
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="pv-card p-12 text-center">
+                {analyzing ? (
+                  <div role="status" aria-live="polite" className="flex flex-col items-center">
+                    <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-5" />
+                    <h3 className="text-lg font-semibold text-text-primary mb-2">Analyzing company…</h3>
+                    <p className="text-text-secondary text-sm max-w-md mx-auto">
+                      Importing SEC filings, running AI extraction, and building a full postmortem for
+                      <span className="font-semibold text-text-primary"> “{query}”</span>. This takes about 30–60 seconds.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-text-primary mb-2">No results found</h3>
+                    <p className="text-text-secondary text-sm mb-6 max-w-md mx-auto">
+                      {query
+                        ? "This company isn't in the archive yet — we can import it live from SEC EDGAR and generate a full intelligence report."
+                        : 'No startups match your current filters. Try adjusting your search or clearing filters.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      {query && (
+                        <button
+                          type="button"
+                          onClick={() => analyzeAndImport(query)}
+                          className="pv-btn-primary inline-flex items-center justify-center gap-2"
+                          aria-label={`Analyze and import ${query}`}
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          Analyze &amp; Import “{query}”
+                        </button>
+                      )}
+                      <button type="button" onClick={clearAllFilters} className="pv-btn-secondary">
+                        Clear all filters
                       </button>
-                    )}
-                    <button type="button" onClick={clearAllFilters} className="pv-btn-secondary">
-                      Clear all filters
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

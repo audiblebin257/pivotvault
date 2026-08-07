@@ -21,14 +21,12 @@ export const Button = ({
       radius.button
     ),
     secondary: clsx(
-      isBeige 
-        ? 'bg-apple-surface-pearl text-apple-ink-muted-80 border border-apple-divider-soft' 
-        : 'bg-cursor-surface-card text-cursor-ink border border-cursor-hairline',
+      'bg-transparent text-text-primary border border-border hover:bg-surface-3',
       radius.button
     ),
     ghost: clsx(
-      colors.primaryText,
-      'hover:opacity-80'
+      'bg-transparent text-text-secondary hover:bg-surface-2 hover:text-text-primary border border-transparent',
+      radius.button
     ),
   };
 

@@ -10,19 +10,19 @@
 :root,
 [data-theme='blue'] {
   /* Core Surfaces */
-  --color-bg: 18 18 18;
-  --color-surface: 27 27 27;
-  --color-surface-2: 34 34 34;
-  --color-surface-3: 40 40 40;
-  --color-border: 42 42 42;
-  --color-border-strong: 58 58 58;
+  --color-bg: 0 0 0;
+  --color-surface: 17 17 17;
+  --color-surface-2: 11 11 11;
+  --color-surface-3: 26 26 26;
+  --color-border: 34 34 34;
+  --color-border-strong: 68 68 68;
 
-  /* Accent Colors */
-  --color-accent: 184 137 76;
-  --color-accent-2: 200 153 92;
-  --color-accent-contrast: 20 15 7;
+  /* Accent Colors - Monochrome White/Gray */
+  --color-accent: 255 255 255;
+  --color-accent-2: 221 221 221;
+  --color-accent-contrast: 0 0 0;
 
-  /* Semantic Colors */
+  /* Semantic Colors - Minimal Hints */
   --color-info: 82 139 255;
   --color-success: 75 170 114;
   --color-warning: 216 165 69;
@@ -30,10 +30,10 @@
 
   /* Text */
   --color-text-primary: 255 255 255;
-  --color-text-secondary: 184 184 184;
+  --color-text-secondary: 170 170 170;
   --color-text-muted: 120 120 120;
-  --color-focus: 184 137 76;
-  --grid-line: 42 42 42;
+  --color-focus: 255 255 255;
+  --grid-line: 34 34 34;
 
   /* Shadows - subtle but premium */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -41,138 +41,138 @@
   --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.25);
   --shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.45);
   --card-shadow: var(--shadow-card);
-  --card-hover-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(184, 137, 76, 0.1);
+  --card-hover-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
   color-scheme: dark;
 
   /* Legacy Cursor/Dark theme backward compat */
-  --color-cursor-primary: 184 137 76;
-  --color-cursor-primary-active: 164 117 56;
+  --color-cursor-primary: 255 255 255;
+  --color-cursor-primary-active: 221 221 221;
   --color-cursor-ink: 255 255 255;
-  --color-cursor-body: 184 184 184;
+  --color-cursor-body: 170 170 170;
   --color-cursor-body-strong: 255 255 255;
   --color-cursor-muted: 120 120 120;
-  --color-cursor-muted-soft: 150 150 150;
-  --color-cursor-hairline: 42 42 42;
-  --color-cursor-hairline-soft: 34 34 34;
-  --color-cursor-hairline-strong: 58 58 58;
-  --color-cursor-canvas: 18 18 18;
-  --color-cursor-canvas-soft: 23 23 23;
-  --color-cursor-surface-card: 27 27 27;
-  --color-cursor-surface-strong: 34 34 34;
-  --color-cursor-on-primary: 255 255 255;
-  --color-cursor-timeline-thinking: 184 137 76;
-  --color-cursor-timeline-grep: 75 170 114;
-  --color-cursor-timeline-read: 82 139 255;
-  --color-cursor-timeline-edit: 170 130 200;
-  --color-cursor-timeline-done: 184 137 76;
+  --color-cursor-muted-soft: 140 140 140;
+  --color-cursor-hairline: 34 34 34;
+  --color-cursor-hairline-soft: 26 26 26;
+  --color-cursor-hairline-strong: 68 68 68;
+  --color-cursor-canvas: 0 0 0;
+  --color-cursor-canvas-soft: 11 11 11;
+  --color-cursor-surface-card: 17 17 17;
+  --color-cursor-surface-strong: 26 26 26;
+  --color-cursor-on-primary: 0 0 0;
+  --color-cursor-timeline-thinking: 120 120 120;
+  --color-cursor-timeline-grep: 120 120 120;
+  --color-cursor-timeline-read: 120 120 120;
+  --color-cursor-timeline-edit: 120 120 120;
+  --color-cursor-timeline-done: 255 255 255;
   --color-cursor-error: 217 106 106;
   --color-cursor-success: 75 170 114;
 
   /* Legacy Apple/Light theme backward compat in dark mode */
-  --color-apple-primary: 100 140 220;
-  --color-apple-primary-focus: 184 137 76;
-  --color-apple-primary-dark: 80 120 200;
+  --color-apple-primary: 255 255 255;
+  --color-apple-primary-focus: 221 221 221;
+  --color-apple-primary-dark: 221 221 221;
   --color-apple-ink: 255 255 255;
   --color-apple-body: 255 255 255;
   --color-apple-body-dark: 255 255 255;
-  --color-apple-body-muted: 184 184 184;
+  --color-apple-body-muted: 170 170 170;
   --color-apple-ink-muted-80: 220 220 220;
   --color-apple-ink-muted-48: 120 120 120;
-  --color-apple-divider-soft: 34 34 34;
-  --color-apple-hairline: 42 42 42;
-  --color-apple-canvas: 18 18 18;
-  --color-apple-canvas-parchment: 23 23 23;
-  --color-apple-surface-pearl: 27 27 27;
-  --color-apple-surface-tile-1: 34 34 34;
-  --color-apple-surface-tile-2: 38 38 38;
-  --color-apple-surface-tile-3: 30 30 30;
+  --color-apple-divider-soft: 26 26 26;
+  --color-apple-hairline: 34 34 34;
+  --color-apple-canvas: 0 0 0;
+  --color-apple-canvas-parchment: 11 11 11;
+  --color-apple-surface-pearl: 17 17 17;
+  --color-apple-surface-tile-1: 11 11 11;
+  --color-apple-surface-tile-2: 17 17 17;
+  --color-apple-surface-tile-3: 26 26 26;
   --color-apple-surface-black: 0 0 0;
-  --color-apple-surface-chip-translucent: 42 42 42;
-  --color-apple-on-primary: 255 255 255;
+  --color-apple-surface-chip-translucent: 34 34 34;
+  --color-apple-on-primary: 0 0 0;
 }
 
 /* ================================
-   LIGHT MODE (Warm Research Paper)
+   LIGHT MODE (Monochrome Editorial)
 ================================ */
 [data-theme='beige'] {
   /* Core Surfaces */
-  --color-bg: 248 247 244;
+  --color-bg: 255 255 255;
   --color-surface: 255 255 255;
-  --color-surface-2: 242 239 232;
-  --color-surface-3: 235 231 223;
-  --color-border: 230 224 213;
-  --color-border-strong: 200 192 178;
+  --color-surface-2: 247 247 247;
+  --color-surface-3: 243 243 243;
+  --color-border: 229 229 229;
+  --color-border-strong: 204 204 204;
 
-  /* Accent Colors */
-  --color-accent: 154 103 53;
-  --color-accent-2: 174 123 73;
-  --color-accent-contrast: 255 252 246;
+  /* Accent Colors - Monochrome Black/Gray */
+  --color-accent: 0 0 0;
+  --color-accent-2: 26 26 26;
+  --color-accent-contrast: 255 255 255;
 
-  /* Semantic Colors */
+  /* Semantic Colors - Minimal Hints */
   --color-info: 60 110 180;
   --color-success: 46 107 74;
   --color-warning: 201 140 43;
   --color-danger: 161 63 63;
 
   /* Text */
-  --color-text-primary: 21 21 21;
-  --color-text-secondary: 94 94 94;
-  --color-text-muted: 130 130 130;
-  --color-focus: 154 103 53;
-  --grid-line: 236 232 224;
+  --color-text-primary: 17 17 17;
+  --color-text-secondary: 102 102 102;
+  --color-text-muted: 150 150 150;
+  --color-focus: 0 0 0;
+  --grid-line: 229 229 229;
 
   /* Shadows - subtle premium paper shadows */
-  --shadow-xs: 0 1px 2px rgba(67, 54, 36, 0.06);
-  --shadow-sm: 0 2px 6px rgba(67, 54, 36, 0.06);
-  --shadow-card: 0 2px 12px rgba(67, 54, 36, 0.06);
-  --shadow-elevated: 0 12px 36px rgba(67, 54, 36, 0.1);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.05);
+  --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.08);
   --card-shadow: var(--shadow-card);
-  --card-hover-shadow: 0 6px 24px rgba(67, 54, 36, 0.1), 0 0 0 1px rgba(154, 103, 53, 0.08);
+  --card-hover-shadow: 0 6px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
   color-scheme: light;
 
   /* Legacy Apple/Light theme backward compat */
-  --color-apple-primary: 154 103 53;
-  --color-apple-primary-focus: 174 123 73;
-  --color-apple-primary-dark: 134 83 33;
-  --color-apple-ink: 21 21 21;
-  --color-apple-body: 21 21 21;
-  --color-apple-body-dark: 21 21 21;
-  --color-apple-body-muted: 94 94 94;
-  --color-apple-ink-muted-80: 41 41 41;
-  --color-apple-ink-muted-48: 130 130 130;
-  --color-apple-divider-soft: 242 239 232;
-  --color-apple-hairline: 230 224 213;
+  --color-apple-primary: 0 0 0;
+  --color-apple-primary-focus: 26 26 26;
+  --color-apple-primary-dark: 26 26 26;
+  --color-apple-ink: 17 17 17;
+  --color-apple-body: 17 17 17;
+  --color-apple-body-dark: 17 17 17;
+  --color-apple-body-muted: 102 102 102;
+  --color-apple-ink-muted-80: 34 34 34;
+  --color-apple-ink-muted-48: 102 102 102;
+  --color-apple-divider-soft: 247 247 247;
+  --color-apple-hairline: 229 229 229;
   --color-apple-canvas: 255 255 255;
-  --color-apple-canvas-parchment: 248 247 244;
-  --color-apple-surface-pearl: 252 250 246;
-  --color-apple-surface-tile-1: 244 241 235;
-  --color-apple-surface-tile-2: 240 237 230;
-  --color-apple-surface-tile-3: 246 243 237;
+  --color-apple-canvas-parchment: 247 247 247;
+  --color-apple-surface-pearl: 255 255 255;
+  --color-apple-surface-tile-1: 247 247 247;
+  --color-apple-surface-tile-2: 243 243 243;
+  --color-apple-surface-tile-3: 247 247 247;
   --color-apple-surface-black: 0 0 0;
-  --color-apple-surface-chip-translucent: 230 224 213;
-  --color-apple-on-primary: 255 252 246;
+  --color-apple-surface-chip-translucent: 229 229 229;
+  --color-apple-on-primary: 255 255 255;
 
   /* Legacy Cursor/Dark theme backward compat in light mode */
-  --color-cursor-primary: 154 103 53;
-  --color-cursor-primary-active: 134 83 33;
-  --color-cursor-ink: 21 21 21;
-  --color-cursor-body: 94 94 94;
-  --color-cursor-body-strong: 21 21 21;
-  --color-cursor-muted: 130 130 130;
-  --color-cursor-muted-soft: 150 145 135;
-  --color-cursor-hairline: 230 224 213;
-  --color-cursor-hairline-soft: 238 234 225;
-  --color-cursor-hairline-strong: 210 202 188;
+  --color-cursor-primary: 0 0 0;
+  --color-cursor-primary-active: 26 26 26;
+  --color-cursor-ink: 17 17 17;
+  --color-cursor-body: 102 102 102;
+  --color-cursor-body-strong: 17 17 17;
+  --color-cursor-muted: 102 102 102;
+  --color-cursor-muted-soft: 120 120 120;
+  --color-cursor-hairline: 229 229 229;
+  --color-cursor-hairline-soft: 243 243 243;
+  --color-cursor-hairline-strong: 204 204 204;
   --color-cursor-canvas: 255 255 255;
-  --color-cursor-canvas-soft: 248 247 244;
+  --color-cursor-canvas-soft: 247 247 247;
   --color-cursor-surface-card: 255 255 255;
-  --color-cursor-surface-strong: 242 239 232;
-  --color-cursor-on-primary: 255 252 246;
-  --color-cursor-timeline-thinking: 154 103 53;
-  --color-cursor-timeline-grep: 46 107 74;
-  --color-cursor-timeline-read: 60 110 180;
-  --color-cursor-timeline-edit: 120 80 160;
-  --color-cursor-timeline-done: 154 103 53;
+  --color-cursor-surface-strong: 247 247 247;
+  --color-cursor-on-primary: 255 255 255;
+  --color-cursor-timeline-thinking: 102 102 102;
+  --color-cursor-timeline-grep: 102 102 102;
+  --color-cursor-timeline-read: 102 102 102;
+  --color-cursor-timeline-edit: 102 102 102;
+  --color-cursor-timeline-done: 0 0 0;
   --color-cursor-error: 161 63 63;
   --color-cursor-success: 46 107 74;
 }
@@ -194,19 +194,19 @@
   --content-max: 88rem;
   --content-gutter: 1rem;
   /* Chart colors - editorial palette */
-  --chart-primary: 21 21 21;
-  --chart-secondary: 154 103 53;
+  --chart-primary: 17 17 17;
+  --chart-secondary: 120 120 120;
   --chart-positive: 46 107 74;
   --chart-negative: 161 63 63;
-  --chart-neutral: 130 130 130;
+  --chart-neutral: 180 180 180;
 }
 
 [data-theme='blue'] {
   --chart-primary: 255 255 255;
-  --chart-secondary: 184 137 76;
+  --chart-secondary: 170 170 170;
   --chart-positive: 75 170 114;
   --chart-negative: 217 106 106;
-  --chart-neutral: 120 120 120;
+  --chart-neutral: 100 100 100;
 }
 
 @media (min-width: 640px) {
@@ -334,6 +334,21 @@
     @apply rounded-xl border border-border/70 bg-surface-2/50;
   }
 
+  /* Frosted glass surface — used for overlays, panels and accent cards */
+  .pv-glass {
+    background: rgba(var(--color-surface) / 0.65);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid rgb(var(--color-border) / 0.6);
+  }
+
+  .pv-glass-strong {
+    background: rgba(var(--color-surface) / 0.85);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid rgb(var(--color-border) / 0.7);
+  }
+
   .pv-card-interactive {
     @apply rounded-xl border border-border bg-surface cursor-pointer;
     box-shadow: var(--card-shadow);
@@ -365,7 +380,7 @@
 
   .pv-btn-secondary {
     @apply pv-btn border border-border text-text-primary;
-    background: rgb(var(--color-surface-2));
+    background: transparent;
   }
 
   .pv-btn-secondary:hover:not(:disabled) {

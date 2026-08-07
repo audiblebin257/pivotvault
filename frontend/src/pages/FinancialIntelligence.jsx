@@ -121,6 +121,9 @@ const SectionHeader = ({ icon: Icon, title, subtitle }) => (
 
 const FinancialIntelligence = () => {
   const { theme } = useTheme();
+  const COMPARE_COLORS = theme === 'blue'
+    ? ['#FFFFFF', '#B0B0B0', '#707070', '#404040']
+    : ['#000000', '#505050', '#909090', '#D0D0D0'];
   const [dashboard, setDashboard] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);

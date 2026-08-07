@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Skull, Search, Zap, BarChart2, MessageSquare, Share2, X, Sparkles,
-  Brain, GitCompare, ClipboardCheck, FileText, ChevronLeft, ChevronRight,
-  ChevronDown, Ghost, LineChart, Sun, Moon, User, LogOut, Plus, Flame
+  Search, Share2, Sparkles, Bookmark, Settings, FileText,
+  ChevronLeft, ChevronRight, ChevronDown, User, Plus
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useDesignSystem } from '../lib/design-system';
 
 // Tree-branch sub-item component for expanded menu
-const TreeSubItem = ({ path, label, icon: Icon, onClick }) => {
+const TreeSubItem = ({ path, label, icon: Icon, onClick, tour }) => {
+  const { isBeige } = useDesignSystem();
   return (
     <div className="relative flex items-center pl-6 py-1 group">
       {/* Curved Tree Branch Connector Line */}
@@ -20,10 +20,13 @@ const TreeSubItem = ({ path, label, icon: Icon, onClick }) => {
       <NavLink
         to={path}
         onClick={onClick}
+        data-tour={tour}
         className={({ isActive }) => clsx(
           "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 select-none",
           isActive
-            ? "bg-accent/15 text-accent font-bold shadow-xs border border-accent/25"
+            ? (isBeige 
+                ? "bg-surface-3 text-text-primary font-bold border-l-2 border-black pl-2 rounded-r-xl rounded-l-none" 
+                : "bg-surface-3 text-text-primary font-bold border-l-2 border-white pl-2 rounded-r-xl rounded-l-none")
             : "text-text-secondary hover:text-text-primary hover:bg-surface-2/80"
         )}
       >
@@ -59,7 +62,7 @@ const ExpandableNavGroup = ({ group, isCollapsed, onItemClick }) => {
           className={clsx(
             "w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200",
             isChildActive 
-              ? "bg-accent/20 text-accent border border-accent/40 shadow-xs" 
+              ? "bg-surface-3 text-text-primary border border-border shadow-xs" 
               : "text-text-secondary hover:text-text-primary hover:bg-surface-2"
           )}
         >
@@ -84,9 +87,10 @@ const ExpandableNavGroup = ({ group, isCollapsed, onItemClick }) => {
                   key={sub.path}
                   to={sub.path}
                   onClick={onItemClick}
+                  data-tour={sub.tour}
                   className={({ isActive }) => clsx(
                     "flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-medium transition-colors",
-                    isActive ? "bg-accent/20 text-accent font-bold" : "text-text-secondary hover:text-text-primary hover:bg-surface-2"
+                    isActive ? "bg-surface-3 text-text-primary font-bold" : "text-text-secondary hover:text-text-primary hover:bg-surface-2"
                   )}
                 >
                   {sub.icon && <sub.icon className="w-3.5 h-3.5" />}
@@ -116,7 +120,7 @@ const ExpandableNavGroup = ({ group, isCollapsed, onItemClick }) => {
         <div className="flex items-center gap-3 min-w-0">
           <div className={clsx(
             "p-1.5 rounded-lg shrink-0 transition-colors",
-            isChildActive ? "bg-accent/20 text-accent" : "bg-surface text-text-muted"
+            isChildActive ? "bg-surface-3 text-text-primary" : "bg-surface text-text-muted"
           )}>
             <Icon className="w-4 h-4" />
           </div>
@@ -147,6 +151,7 @@ const ExpandableNavGroup = ({ group, isCollapsed, onItemClick }) => {
                 path={sub.path}
                 label={sub.name}
                 icon={sub.icon}
+                tour={sub.tour}
                 onClick={onItemClick}
               />
             ))}
@@ -160,8 +165,7 @@ const ExpandableNavGroup = ({ group, isCollapsed, onItemClick }) => {
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-  const { user, isAuthed, logout } = useAuth();
+  const { user } = useAuth();
 
   React.useEffect(() => {
     setIsMobileOpen(false);
@@ -181,46 +185,24 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
     };
   }, [isMobileOpen, setIsMobileOpen]);
 
-  // Expandable Navigation Groups
+  // Simplified Core Navigation — one cohesive product, no duplicate analysis pages
   const mainGroups = [
     {
-      name: 'Dashboard Intel',
+      name: 'Core',
       icon: LayoutGridIcon,
       defaultOpen: true,
       items: [
-        { name: 'Failure Explorer', path: '/explore', icon: Search },
-        { name: 'Knowledge Graph', path: '/graph', icon: Share2 },
-        { name: 'Hall of Ghosts', path: '/ghosts', icon: Ghost },
-      ]
-    },
-    {
-      name: 'AI Risk Engine',
-      icon: Zap,
-      defaultOpen: false,
-      items: [
-        { name: 'AI Assistant', path: '/assistant', icon: Sparkles },
-        { name: 'Risk Scanner', path: '/scan', icon: Flame },
-        { name: 'Pitch Deck Autopsy', path: '/autopsy', icon: FileText },
-      ]
-    },
-    {
-      name: 'Financials & Playbook',
-      icon: LineChart,
-      defaultOpen: false,
-      items: [
-        { name: 'Financial Intelligence', path: '/financials', icon: LineChart },
-        { name: 'Competitor Compare', path: '/compare', icon: GitCompare },
-        { name: 'Founder Playbook', path: '/playbook', icon: ClipboardCheck },
-        { name: 'Insights Dashboard', path: '/insights', icon: BarChart2 },
+        { name: 'Explore', path: '/explore', icon: Search, tour: 'explore' },
+        { name: 'AI Research Assistant', path: '/assistant', icon: Sparkles, tour: 'assistant' },
+        { name: 'Founder Intelligence Report', path: '/report', icon: FileText, tour: 'report' },
+        { name: 'Startup Graph', path: '/graph', icon: Share2, tour: 'graph' },
+        { name: 'Bookmarks', path: '/bookmarks', icon: Bookmark },
+        { name: 'Settings', path: '/settings', icon: Settings },
       ]
     }
   ];
 
-  // Direct Learn Items
-  const learnItems = [
-    { name: 'Failure Quiz', path: '/quiz', icon: Brain },
-    { name: 'Founder Confessions', path: '/confessions', icon: MessageSquare },
-  ];
+  // Direct items section removed — navigation is now a single flat Core group.
 
   // Featured / Recent Founder Case Studies
   const featuredFounders = [
@@ -259,7 +241,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
         {!collapsed ? (
           <div className="flex items-center gap-3">
             {/* Avatar */}
-            <div className="relative shrink-0 w-11 h-11 rounded-2xl bg-accent/15 border border-accent/30 text-accent font-display font-black text-sm flex items-center justify-center shadow-xs">
+            <div className="relative shrink-0 w-11 h-11 rounded-2xl bg-surface-3 border border-border text-text-primary font-display font-black text-sm flex items-center justify-center shadow-xs">
               {userInitials}
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-success border-2 border-bg" />
             </div>
@@ -271,7 +253,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
             </div>
           </div>
         ) : (
-          <div title={user?.name || 'Andrew Smith'} className="relative shrink-0 w-10 h-10 rounded-2xl bg-accent/15 border border-accent/30 text-accent font-display font-bold text-xs flex items-center justify-center">
+          <div title={user?.name || 'Andrew Smith'} className="relative shrink-0 w-10 h-10 rounded-2xl bg-surface-3 border border-border text-text-primary font-display font-bold text-xs flex items-center justify-center">
             {userInitials}
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success border-2 border-bg" />
           </div>
@@ -298,38 +280,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
             ))}
           </div>
         </div>
-
-        {/* LEARN & COMMUNITY Section */}
-        <div>
-          {!collapsed && (
-            <div className="px-2 mb-2 text-[10px] font-bold text-text-muted uppercase tracking-widest opacity-60">
-              LEARN & CONFESSIONS
-            </div>
-          )}
-          <div className="space-y-1">
-            {learnItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsMobileOpen(false)}
-                title={collapsed ? item.name : undefined}
-                className={({ isActive }) => clsx(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-200 select-none",
-                  collapsed ? "justify-center h-11 w-11 mx-auto" : "w-full",
-                  isActive
-                    ? "bg-accent/15 text-accent font-bold border border-accent/25"
-                    : "text-text-secondary hover:text-text-primary hover:bg-surface-2/80"
-                )}
-              >
-                <item.icon className="w-4 h-4 shrink-0" />
-                {!collapsed && <span className="truncate">{item.name}</span>}
-              </NavLink>
-            ))}
-          </div>
-        </div>
-
         {/* FEATURED CASE STUDIES / MESSAGES LIST */}
         <div>
+
           {!collapsed && (
             <div className="flex items-center justify-between px-2 mb-2">
               <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest opacity-60">FEATURED VAULTS</span>
@@ -347,7 +300,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
                   collapsed ? "justify-center" : ""
                 )}
               >
-                <div className="relative shrink-0 w-8 h-8 rounded-full bg-surface-2 border border-border text-accent font-bold text-xs flex items-center justify-center group-hover:scale-105 transition-transform">
+                <div className="relative shrink-0 w-8 h-8 rounded-full bg-surface-2 border border-border text-text-primary font-bold text-xs flex items-center justify-center group-hover:scale-105 transition-transform">
                   {f.avatar}
                   <span className={clsx("absolute bottom-0 right-0 w-2 h-2 rounded-full border border-bg", f.status)} />
                 </div>
@@ -369,23 +322,23 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
             <div>
               <h4 className="text-sm font-bold text-text-primary leading-snug">Let's start!</h4>
               <p className="text-xs text-text-muted mt-1 leading-relaxed">
-                Run an instant AI risk scan on your startup idea.
+                Generate a full Founder Intelligence Report for any idea, company or deck.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => navigate('/scan')}
+              onClick={() => navigate('/report')}
               className="w-full h-11 rounded-xl bg-accent text-accent-contrast hover:bg-accent-2 font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span>Risk-Scan Idea</span>
+              <span>Generate Report</span>
             </button>
           </div>
         ) : (
           <button
             type="button"
-            onClick={() => navigate('/scan')}
-            title="Risk-Scan Idea"
+            onClick={() => navigate('/report')}
+            title="Generate Intelligence Report"
             className="w-11 h-11 mx-auto rounded-xl bg-accent text-accent-contrast hover:bg-accent-2 flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all"
           >
             <Plus className="w-5 h-5 stroke-[3]" />

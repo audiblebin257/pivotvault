@@ -1,9 +1,8 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { 
   Building2, Globe, Users, DollarSign, Calendar, Clock, 
-  ChevronRight, TrendingDown, Info, ShieldAlert, Sparkles, 
+  ChevronRight, TrendingDown, ShieldAlert, Sparkles, 
   AlertCircle, ArrowLeft, BookOpen, Flame, Skull, Target, 
   EyeOff, Lightbulb, Compass, Landmark, ShieldCheck, HelpCircle
 } from 'lucide-react';
@@ -17,6 +16,7 @@ import StartupCard from '../components/StartupCard';
 import GhostChat from '../components/GhostChat';
 import Logo from '../components/Logo';
 import FailureRiskIndex from '../components/FailureRiskIndex';
+import StartupTimeline from '../components/timeline/StartupTimeline';
 import { getDocumentaryData } from '../lib/documentaryData';
 
 const PostmortemPage = () => {
@@ -216,31 +216,10 @@ const PostmortemPage = () => {
 
   // Status badges colors
   const statusColors = {
-    failed: 'bg-red-500/10 text-danger border-red-500/20',
-    acquired: 'bg-emerald-500/10 text-success border-emerald-500/20',
-    pivoted: 'bg-amber-500/10 text-warning border-amber-500/20',
-    zombie: 'bg-slate-500/10 text-text-secondary border-slate-500/20',
-  };
-
-  // Timeline stage icon mapping
-  const timelineStageIcons = {
-    founding: <Building2 className="w-4 h-4 text-blue-400" />,
-    funding: <DollarSign className="w-4 h-4 text-emerald-400" />,
-    growth: <TrendingDown className="w-4 h-4 text-purple-400 rotate-180" />, // trending up
-    major_decisions: <Compass className="w-4 h-4 text-amber-400" />,
-    warning_signs: <AlertCircle className="w-4 h-4 text-orange-400 animate-pulse" />,
-    collapse: <Flame className="w-4 h-4 text-red-500" />,
-    aftermath: <BookOpen className="w-4 h-4 text-slate-400" />,
-  };
-
-  const timelineStageColors = {
-    founding: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
-    funding: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-    growth: 'border-purple-500/30 bg-purple-500/10 text-purple-400',
-    major_decisions: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-    warning_signs: 'border-orange-500/30 bg-orange-500/10 text-orange-400',
-    collapse: 'border-red-500/30 bg-red-500/10 text-red-400',
-    aftermath: 'border-slate-500/30 bg-slate-500/10 text-slate-400',
+    failed: 'bg-danger/10 text-danger border-danger/20',
+    acquired: 'bg-success/10 text-success border-success/20',
+    pivoted: 'bg-warning/10 text-warning border-warning/20',
+    zombie: 'bg-surface-3 text-text-secondary border-border',
   };
 
   return (
@@ -380,56 +359,23 @@ const PostmortemPage = () => {
               </div>
             </section>
 
-            {/* 3. Timeline Section */}
+            {/* 3. Timeline Section — fully interactive, scroll-animated timeline */}
             <section>
               <h2 className="text-2xl font-display font-bold mb-8 flex items-center gap-3 text-text-primary border-b border-border/40 pb-4">
                 <Calendar className="text-accent w-6 h-6" />
                 The Collapse Chronicles
               </h2>
               <p className="text-sm text-text-muted mb-8 leading-relaxed">
-                Trace the path from initial spark to final liquidation. This timeline maps the crucial decision points and warning signs that sealed the company's fate.
+                Trace the path from initial spark to final liquidation. Scroll to watch the timeline fill — click any
+                node to open the event dossier with a scoped AI analyst that only answers questions about that moment.
               </p>
-              
-              <div className="relative pl-8 border-l-2 border-border/40 ml-4 space-y-12">
-                {doc.timeline.map((event, i) => {
-                  return (
-                    <motion.div 
-                      key={i} 
-                      className="relative"
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.05 }}
-                    >
-                      {/* Event Dot */}
-                      <span className={clsx(
-                        "absolute -left-12 top-1 w-8 h-8 rounded-full border-2 border-bg flex items-center justify-center shadow-lg transition-all",
-                        timelineStageColors[event.stage] || 'border-accent bg-accent/10 text-accent'
-                      )}>
-                        {timelineStageIcons[event.stage] || <Compass className="w-4 h-4" />}
-                      </span>
-                      
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-surface/20 border border-border/20 p-5 rounded-card hover:border-border/60 transition-all shadow-sm">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-[10px] font-data text-accent font-bold uppercase tracking-wider">
-                              {event.dateStr}
-                            </span>
-                            <span className={clsx(
-                              "text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border tracking-widest font-data",
-                              timelineStageColors[event.stage]
-                            )}>
-                              {event.stage.replace('_', ' ')}
-                            </span>
-                          </div>
-                          <h3 className="text-lg font-bold text-text-primary mb-2">{event.title}</h3>
-                          <p className="text-text-muted text-sm leading-relaxed max-w-xl">{event.description}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+
+              <StartupTimeline
+                events={doc.timeline}
+                startup={startup}
+                doc={doc}
+                relatedStartups={similar}
+              />
             </section>
 
             {/* 4. Failure Investigation Section */}
@@ -457,8 +403,8 @@ const PostmortemPage = () => {
                   <p className="text-sm text-text-muted leading-relaxed">{doc.failureInvestigation.hiddenCause}</p>
                 </div>
 
-                <div className="bg-surface/30 border border-border/40 p-6 rounded-card hover:border-orange-400/30 transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-3 text-orange-400">
+                <div className="bg-surface/30 border border-border/40 p-6 rounded-card hover:border-warning/30 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3 text-warning">
                     <AlertCircle className="w-5 h-5" />
                     <h3 className="font-display font-bold text-sm uppercase tracking-wider">Missed Signals</h3>
                   </div>
@@ -501,9 +447,9 @@ const PostmortemPage = () => {
             </section>
 
             {/* 5. Lessons Section */}
-            <section className="border border-amber-500/20 bg-amber-500/5 p-8 rounded-card relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl -z-10" />
-              <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-3 text-amber-400">
+            <section className="border border-border bg-surface-2 p-8 rounded-card relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-text-primary/5 rounded-full blur-2xl -z-10" />
+              <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-3 text-text-primary">
                 <Lightbulb className="w-6 h-6 animate-pulse" />
                 The Postmortem Playbook
               </h2>
@@ -512,8 +458,8 @@ const PostmortemPage = () => {
               </p>
               <div className="space-y-6">
                 {doc.lessons.map((lesson, i) => (
-                  <div key={i} className="flex gap-4 items-start bg-bg/40 border border-amber-500/10 p-5 rounded-xl">
-                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold font-data text-sm">
+                  <div key={i} className="flex gap-4 items-start bg-bg/40 border border-border p-5 rounded-xl">
+                    <div className="w-8 h-8 rounded-lg bg-surface-3 border border-border text-text-primary flex items-center justify-center shrink-0 font-bold font-data text-sm">
                       {i + 1}
                     </div>
                     <div>

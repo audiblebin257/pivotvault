@@ -8,23 +8,23 @@ export const useDesignSystem = () => {
 
   const colors = {
     // Primary
-    primary: isBeige ? 'bg-apple-primary text-apple-on-primary' : 'bg-cursor-primary text-cursor-on-primary',
-    primaryText: isBeige ? 'text-apple-primary' : 'text-cursor-primary',
+    primary: 'bg-accent text-accent-contrast',
+    primaryText: 'text-text-primary',
     // Surface
-    canvas: isBeige ? 'bg-apple-canvas' : 'bg-cursor-canvas',
-    surface: isBeige ? 'bg-apple-canvas' : 'bg-cursor-surface-card',
-    surface2: isBeige ? 'bg-apple-canvas-parchment' : 'bg-cursor-canvas-soft',
+    canvas: 'bg-bg',
+    surface: 'bg-surface',
+    surface2: 'bg-surface-2',
     // Text
-    text: isBeige ? 'text-apple-ink' : 'text-cursor-ink',
-    textSecondary: isBeige ? 'text-apple-ink-muted-48' : 'text-cursor-muted',
+    text: 'text-text-primary',
+    textSecondary: 'text-text-secondary',
     // Border
-    border: isBeige ? 'border-apple-hairline' : 'border-cursor-hairline',
-    // Timeline colors (Cursor specific)
-    timelineThinking: 'bg-cursor-timeline-thinking text-cursor-ink',
-    timelineGrep: 'bg-cursor-timeline-grep text-cursor-ink',
-    timelineRead: 'bg-cursor-timeline-read text-cursor-ink',
-    timelineEdit: 'bg-cursor-timeline-edit text-cursor-ink',
-    timelineDone: 'bg-cursor-timeline-done text-cursor-on-primary',
+    border: 'border-border',
+    // Timeline colors
+    timelineThinking: 'bg-surface-3 text-text-muted',
+    timelineGrep: 'bg-surface-3 text-text-muted',
+    timelineRead: 'bg-surface-3 text-text-muted',
+    timelineEdit: 'bg-surface-3 text-text-muted',
+    timelineDone: 'bg-accent text-accent-contrast',
   };
 
   const typography = {

@@ -1,14 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Skull, Search, Sparkles, Zap, ArrowRight, Sun, Moon, Play } from 'lucide-react';
+import { Skull, Search, Sparkles, FileText, ArrowRight, Sun, Moon, Play } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 
 const features = [
   {
     icon: Search,
-    title: 'Explore Startup Archive',
-    subtitle: 'Browse 100s of documented postmortems.',
+    title: 'Explore Intelligence Database',
+    subtitle: 'Browse companies with health & failure scores.',
   },
   {
     icon: Sparkles,
@@ -16,9 +16,9 @@ const features = [
     subtitle: 'Get failure-backed insights for your idea.',
   },
   {
-    icon: Zap,
-    title: 'Risk Scanner',
-    subtitle: 'Stress-test your startup before building.',
+    icon: FileText,
+    title: 'Founder Intelligence Report',
+    subtitle: 'Risk scan, playbook & deck review in one report.',
   },
 ];
 
